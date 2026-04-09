@@ -15,3 +15,4 @@
 ## 4. Thay đổi code trên repo 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/606b0676-29e2-434f-9137-eda3ad32f65e" />
 
+# bài thực hành 2
