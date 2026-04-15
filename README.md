@@ -15,4 +15,21 @@
 ## 4. Thay đổi code trên repo 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/606b0676-29e2-434f-9137-eda3ad32f65e" />
 
-# bài thực hành 2
+# bài thực hành 2 📱 Bài thực hành Flutter – Bán đồ điện tử
+
+## 1. Biến mô tả
+
+Sử dụng các biến để mô tả thông tin mặt hàng và người mua như id, tên, số lượng, giá...
+
+## 2. Collections
+
+* Sử dụng Map để lưu một đối tượng
+* Sử dụng List để lưu danh sách nhiều đối tượng
+
+## 3. Hiển thị dữ liệu
+
+Dữ liệu được hiển thị bằng Text, Row và ListView trong Flutter
+
+## Kết luận
+
+Bài thực hành giúp hiểu cách sử dụng biến, List, Map và hiển thị dữ liệu trong Flutter
