@@ -3,11 +3,11 @@ import 'package:intl/intl.dart';
 enum OrderStatus { pending, processing, shipped, delivered, cancelled }
 
 class OrderItem {
-  final String productId;
-  final String productName;
-  final double price;
-  final int quantity;
-  final String productImage;
+  final String productId; // mã sản phẩm
+  final String productName; //tên sản phẩm
+  final double price; // giá sản phẩm
+  final int quantity; // số lượng sản phẩm trong đơn hàng
+  final String productImage; // URL hình ảnh sản phẩm
 
   OrderItem({
     required this.productId,
