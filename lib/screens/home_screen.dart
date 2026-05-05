@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
-import '../models/content_item.dart';
+import '../widgets/shared_widgets.dart';
 
 class HomeScreen extends StatelessWidget {
-  final List<ContentItem> items = [
-    ContentItem(
-      title: "Title",
-      body:
-          "Body text for whatever you'd like to say. Add main takeaway points, quotes, anecdotes, or even a very very short story.",
-    ),
-    ContentItem(
-      title: "Title",
-      body:
-          "Body text for whatever you'd like to say. Add main takeaway points, quotes, anecdotes, or even a very very short story.",
-    ),
-    ContentItem(
-      title: "Title",
-      body:
-          "Body text for whatever you'd like to say. Add main takeaway points, quotes, anecdotes, or even a very very short story.",
-    ),
-  ];
-
-  HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Home should be empty; all UI lives under ContentScreen.
-    return Container();
+    return Column(
+      children: [
+        buildBanner(),
+        const Expanded(
+          child: Center(
+            child: Text("Home Screen", style: TextStyle(fontSize: 22)),
+          ),
+        ),
+        buildSimpleFooter(),
+      ],
+    );
   }
 }

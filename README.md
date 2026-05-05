@@ -37,3 +37,8 @@ Bài thực hành giúp hiểu cách sử dụng biến, List, Map và hiển th
 bài kiểm tra giữa kỳ
 nội dung công việc, thiết kế giao diện content
 
+nội dung nhiệm vụ từng thành viên:
+1:Nguyễn Quang Hưng tạo trang content
+2:Vương Hùng Vi tạo trang content
+3:Nguyễn Anh Khiêm tạo trang about
+
