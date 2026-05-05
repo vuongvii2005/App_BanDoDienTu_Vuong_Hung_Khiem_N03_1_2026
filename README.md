@@ -106,8 +106,6 @@ câu 5
 https://github.com/vuongvii2005/App_BanDoDienTu_Vuong_Hung_Khiem_N03_1_2026/blob/vuong/README.md
 https://github.com/vuongvii2005/App_BanDoDienTu_Vuong_Hung_Khiem_N03_1_2026/tree/vuong
 
-Bài kiểm tra giữa kỳ
-câu 1
+bài kiểm tra giữa kỳ
 Vi Hùng Vương
-Làm trang content
-
+làm phần content
