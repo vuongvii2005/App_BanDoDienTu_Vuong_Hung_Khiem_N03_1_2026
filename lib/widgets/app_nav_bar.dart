@@ -9,7 +9,6 @@ class AppNavBar extends StatelessWidget {
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Logo
           const Text(
@@ -21,6 +20,7 @@ class AppNavBar extends StatelessWidget {
             ),
           ),
           // Menu items
+          const Spacer(),
           Row(
             children: const [
               SizedBox(width: 20),
