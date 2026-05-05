@@ -33,3 +33,7 @@ Dữ liệu được hiển thị bằng Text, Row và ListView trong Flutter
 ## Kết luận
 
 Bài thực hành giúp hiểu cách sử dụng biến, List, Map và hiển thị dữ liệu trong Flutter
+
+bài kiểm tra giữa kỳ
+nội dung công việc, thiết kế giao diện content
+
