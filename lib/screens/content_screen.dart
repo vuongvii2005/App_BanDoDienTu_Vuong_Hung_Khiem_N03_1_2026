@@ -27,10 +27,10 @@ class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16), // trái phải 32, trên dưới 16
       color: Colors.white,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,// sắp xếp ngang và cách đều
         children: [
           // Logo
           Row(
@@ -122,11 +122,11 @@ class Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Column( // sắp xếp từ trên xuống dưới
         children: [
           //Banner
           Container(
-            width: double.infinity,
+            width: double.infinity, // full chiều ngang
             height: 400,
             decoration: BoxDecoration(
               image: DecorationImage(
@@ -220,7 +220,7 @@ class Body extends StatelessWidget {
             ),
           ),
 
-          SizedBox(height: 40),
+          SizedBox(height: 40), 
           Container(
             color: Colors.white,
             child: Padding(
@@ -243,16 +243,16 @@ class Body extends StatelessWidget {
                     style: TextStyle(color: Colors.grey),
                   ),
 
-                  SizedBox(height: 30),
+                  SizedBox(height: 30),// là khoảng cách giữa subheading và grid
                   GridView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: products.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.4,
+                      crossAxisCount: 3, // số cột (3 thẻ trên 1 hàng)
+                      crossAxisSpacing: 16,// khoảng cách ngang giữa các thẻ
+                      mainAxisSpacing: 16, // khoảng cách dọc giữa các thẻ
+                      childAspectRatio: 1.4,// tỉ lệ giữa chiều rộng và chiều cao của thẻ (có thể điều chỉnh để phù hợp với thiết kế)
                     ),
                     itemBuilder: (context, index) {
                       final p = products[index];
