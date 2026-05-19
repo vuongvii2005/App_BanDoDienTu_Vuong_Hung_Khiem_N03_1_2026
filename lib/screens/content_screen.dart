@@ -26,7 +26,7 @@ class ContentScreen extends StatelessWidget {
 class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Container( 
       padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16), // trái phải 32, trên dưới 16
       color: Colors.white,
       child: Row(
