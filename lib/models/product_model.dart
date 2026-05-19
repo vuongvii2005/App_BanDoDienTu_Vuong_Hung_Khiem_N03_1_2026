@@ -1,3 +1,5 @@
+//Sản phẩm: 
+//tên, mô tả, giá, ảnh, danh mục, rating, stock
 class Product {
   final String id;
   final String name;

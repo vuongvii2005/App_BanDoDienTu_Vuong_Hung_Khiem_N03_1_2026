@@ -1,3 +1,4 @@
+//Đơn hàng, item trong đơn hàng, trạng thái đơn
 import 'package:intl/intl.dart';
 
 enum OrderStatus { pending, processing, shipped, delivered, cancelled }

@@ -1,4 +1,5 @@
-class User {
+// Thông tin người dùng
+class AppUser {
   final String id;
   final String email;
   final String fullName;
@@ -7,7 +8,7 @@ class User {
   final String? address;
   final DateTime createdAt;
 
-  User({
+  AppUser({
     required this.id,
     required this.email,
     required this.fullName,
@@ -18,8 +19,8 @@ class User {
   });
 
   // Convert from JSON
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
       id: json['id'] ?? '',
       email: json['email'] ?? '',
       fullName: json['fullName'] ?? '',
@@ -46,5 +47,7 @@ class User {
   }
 
   @override
-  String toString() => 'User(id: $id, email: $email, fullName: $fullName)';
+  String toString() {
+    return 'AppUser(id: $id, email: $email, fullName: $fullName)';
+  }
 }
