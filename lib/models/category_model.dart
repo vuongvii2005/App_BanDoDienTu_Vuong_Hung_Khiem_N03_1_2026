@@ -1,3 +1,4 @@
+// Danh mục sản phẩm
 class Category {
   final String id;
   final String name;

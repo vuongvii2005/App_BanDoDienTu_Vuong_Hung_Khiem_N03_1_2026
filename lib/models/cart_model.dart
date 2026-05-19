@@ -1,3 +1,4 @@
+//Giỏ hàng, item trong giỏ, thêm/xóa/cập nhật số lượng
 import 'product_model.dart';
 
 class CartItem {
