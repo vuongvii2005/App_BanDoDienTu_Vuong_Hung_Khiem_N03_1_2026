@@ -1,9 +1,6 @@
 /* Nhiệm vụ
 Hiển thị một sản phẩm trong giỏ hàng.
 
-Dùng ở:
-CartScreen
-CheckoutScreen
 
 Nội dung hiển thị
 - Ảnh sản phẩm
