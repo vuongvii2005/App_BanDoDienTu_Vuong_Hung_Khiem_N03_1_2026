@@ -1,0 +1,306 @@
+Bạn là Java Spring Boot + Thymeleaf + Firebase expert.
+
+Tôi cần xây dựng hệ thống Admin Web cho app thương mại điện tử.
+Flutter Mobile (của bạn tôi) đã dùng Firebase sẵn.
+Admin Spring Boot sẽ kết nối CÙNG Firebase project đó.
+KHÔNG dùng MySQL — toàn bộ data lưu trên Firestore.
+
+=== STACK ===
+- Java Spring Boot 3.x
+- Thymeleaf + Bootstrap 5
+- Firebase Admin SDK (kết nối Firestore, Auth, Storage)
+- Spring Security (chỉ bảo vệ trang admin web)
+- WebSocket (thông báo realtime từ Firestore)
+- Chart.js (biểu đồ doanh thu)
+- Maven
+
+=== FIREBASE COLLECTIONS (dùng chung với Flutter) ===
+Firestore có các collection sau (đặt tên y chang Flutter):
+
+users/{userId}
+  - email, fullName, phone, role(user/admin),
+    createdAt, isActive
+
+products/{productId}
+  - name, price, stock, imageUrl, category,
+    createdAt, isActive
+
+orders/{orderId}
+  - userId, totalPrice,
+    status(pending/confirmed/shipping/delivered/cancelled),
+    createdAt, updatedAt
+
+orders/{orderId}/items/{itemId}
+  - productId, productName, quantity, price
+
+notifications/{notificationId}
+  - title, content, type, isRead,
+    userId, createdAt
+
+=== CẤU HÌNH FIREBASE ===
+Tạo file src/main/resources/serviceAccountKey.json
+(người dùng tự download từ Firebase Console)
+
+FirebaseConfig.java:
+- Khởi tạo FirebaseApp từ serviceAccountKey.json
+- Inject FirebaseFirestore bean
+- Inject FirebaseAuth bean
+- Inject FirebaseStorage bean (cho upload ảnh)
+
+application.properties:
+- firebase.service-account=classpath:serviceAccountKey.json
+- firebase.storage.bucket=your-project.appspot.com
+- server.port=8080
+- spring.security chỉ bảo vệ /admin/**
+
+=== CẤU TRÚC PROJECT ===
+config/
+  FirebaseConfig.java
+  SecurityConfig.java
+  WebSocketConfig.java
+
+service/
+  FirebaseProductService.java
+  FirebaseOrderService.java
+  FirebaseUserService.java
+  FirebaseRevenueService.java
+  FirebaseNotificationService.java
+
+controller/
+  web/
+    AuthController.java
+    DashboardController.java
+    ProductController.java
+    OrderController.java
+    RevenueController.java
+    UserController.java
+    NotificationController.java
+  api/
+    ProductApiController.java
+    OrderApiController.java
+    AuthApiController.java
+    NotificationApiController.java
+
+templates/
+  layout/base.html
+  auth/login.html
+  dashboard/index.html
+  products/list.html
+  products/form.html
+  orders/list.html
+  revenue/index.html
+  users/list.html
+  notifications/list.html
+
+static/
+  css/admin.css
+  js/admin.js
+
+=== SERVICE LAYER (Firebase) ===
+Tất cả service dùng Firestore Java SDK:
+
+FirebaseProductService:
+- getAll()         → query collection "products" where isActive=true
+- getById(id)      → document ref
+- save(product)    → add hoặc update document
+- softDelete(id)   → update isActive=false
+- uploadImage(file)→ upload lên Firebase Storage, trả URL
+
+FirebaseOrderService:
+- getAll()                  → tất cả đơn
+- getByStatus(status)       → lọc theo trạng thái
+- getByUserId(userId)       → đơn của 1 user
+- updateStatus(id, status)  → cập nhật + tạo notification cho user
+- getRecentOrders(limit)    → đơn mới nhất
+
+FirebaseUserService:
+- getAll()           → tất cả users có role=user
+- getById(id)
+- toggleActive(id)   → khóa/mở tài khoản
+- getOrderHistory(userId) → đơn hàng của user
+
+FirebaseRevenueService:
+- getToday()                    → tổng doanh thu hôm nay
+- getByDateRange(from, to)      → theo khoảng ngày
+- getByMonth(month, year)       → theo tháng
+- getByYear(year)               → theo năm
+- getTopProducts(limit)         → SP bán chạy nhất
+- getDailyRevenue(days)         → mảng doanh thu 7/30 ngày
+
+FirebaseNotificationService:
+- getUnread()              → thông báo chưa đọc
+- markAsRead(id)           → đánh dấu đã đọc
+- markAllAsRead()
+- listenNewOrders()        → Firestore realtime listener
+- sendToUser(userId, msg)  → gửi thông báo cho user
+
+=== WEBSOCKET REALTIME ===
+WebSocketConfig.java:
+- endpoint: /ws (SockJS)
+- topic: /topic/admin-notifications
+
+Luồng realtime:
+1. Flutter user đặt đơn mới
+   → Firestore tạo document trong "orders"
+   → Spring Boot lắng nghe Firestore listener
+   → Spring Boot push WebSocket → admin browser
+   → Badge thông báo tăng + toast popup
+
+2. Admin cập nhật trạng thái đơn
+   → Spring Boot update Firestore
+   → Flutter user lắng nghe Firestore realtime
+   → User thấy trạng thái đổi ngay lập tức
+
+FirestoreListenerService.java:
+- Khởi động khi app start (@PostConstruct)
+- Lắng nghe collection "orders" có document mới
+- Khi có đơn mới → gửi qua SimpMessagingTemplate
+
+=== GIAO DIỆN THYMELEAF ===
+Design:
+- Primary: #1565C0
+- Accent: #00B0FF
+- Background: #F8FAFF
+- Card: #FFFFFF, shadow nhẹ, bo góc 12px
+- Bootstrap 5 + CSS tùy chỉnh
+
+base.html (th:fragment="layout"):
+- Sidebar 240px: logo, 6 menu item, avatar admin
+- Topbar: tiêu đề, badge thông báo realtime, logout
+- Content: th:fragment="content"
+- Script WebSocket client ở cuối
+
+Animation (chỉ CSS + JS thuần, không thư viện):
+- Card fade slideUp khi load
+- Sidebar item hover slide phải nhẹ
+- Button scale 0.97 khi nhấn
+- Table row highlight khi hover
+- Badge pulse animation
+- Toast slide in từ phải khi có thông báo mới
+- Page fade khi chuyển trang
+
+--- LOGIN ---
+- Card trung tâm, không sidebar
+- Email + password
+- Spring Security xử lý
+- Redirect dashboard nếu đã login
+
+--- DASHBOARD ---
+- 4 thẻ số liệu (fetch từ Firestore):
+  Đơn hàng | Doanh thu hôm nay | Sản phẩm | Users
+- LineChart doanh thu 7 ngày (Chart.js + data từ Firestore)
+- Bảng 5 đơn mới nhất
+- Toast realtime khi có đơn mới
+
+--- SẢN PHẨM ---
+List:
+- Bảng: ảnh, tên, giá, tồn kho, danh mục, sửa/xóa
+- Tìm kiếm client-side
+- Xóa: confirm dialog → soft delete Firestore
+
+Form thêm/sửa:
+- Tên, giá, số lượng, danh mục, mô tả
+- Upload ảnh → Firebase Storage → lưu imageUrl
+- Validate bắt buộc
+- Lưu xong → Flutter thấy ngay (Firestore realtime)
+
+--- ĐƠN HÀNG ---
+- Tab lọc theo status
+- Bảng: mã đơn, tên khách, tổng tiền, trạng thái, ngày
+- Nhấn vào: modal chi tiết + dropdown đổi trạng thái
+- Đổi trạng thái → Firestore update
+  → Flutter user thấy ngay (họ đang lắng nghe Firestore)
+
+--- DOANH THU ---
+- Tabs: Ngày | Tháng | Năm
+- Chọn ngày/tháng/năm → load lại chart
+- LineChart theo ngày được chọn
+- BarChart top 5 sản phẩm bán chạy
+- 3 thẻ: hôm nay, tháng này, năm nay
+- Tính từ collection "orders" status=delivered
+
+--- NGƯỜI DÙNG ---
+- Bảng: tên, email, số đơn đã mua, ngày đăng ký
+- Tìm kiếm theo tên/email
+- Nhấn vào: modal lịch sử đơn hàng (query Firestore)
+- Nút khóa/mở tài khoản (update isActive Firestore)
+
+--- THÔNG BÁO ---
+- Nhận realtime từ Firestore listener
+- Danh sách: icon loại, tiêu đề, nội dung, thời gian
+- Chưa đọc: nền xanh nhạt #E3F2FD
+- Nhấn vào: đánh dấu đã đọc
+- Nút đọc tất cả
+- Badge trên topbar tự cập nhật qua WebSocket
+
+=== REST API CHO FLUTTER ===
+Prefix /api/v1/ — không cần Spring Security
+(Flutter tự xác thực bằng Firebase Auth)
+
+POST /api/v1/auth/register
+  body: {email, password, fullName, phone}
+  → tạo user Firebase Auth + document Firestore
+  → trả: {success, userId, token}
+
+POST /api/v1/auth/login
+  body: {email, password}
+  → xác thực Firebase Auth
+  → trả: {success, userId, token, fullName}
+
+GET /api/v1/products
+  → query Firestore products where isActive=true
+  → trả: {success, data: [...products]}
+
+GET /api/v1/products/{id}
+  → trả chi tiết sản phẩm
+
+POST /api/v1/orders
+  body: {userId, items:[{productId,quantity}]}
+  → tính totalPrice từ Firestore
+  → tạo document order + subcollection items
+  → giảm stock sản phẩm
+  → tạo notification cho admin
+  → push WebSocket lên admin
+  → trả: {success, orderId}
+
+GET /api/v1/orders/user/{userId}
+  → query orders where userId=userId
+  → trả danh sách đơn kèm items
+
+PUT /api/v1/orders/{id}/cancel
+  → update status=cancelled
+  → trả: {success}
+
+GET /api/v1/notifications/user/{userId}
+  → query notifications where userId=userId
+  → trả danh sách thông báo
+
+=== YÊU CẦU KỸ THUẬT ===
+- Tất cả Firestore call dùng async (ApiFuture → get())
+- API trả chuẩn: {success: bool, message: str, data: obj}
+- Ảnh upload Firebase Storage, URL công khai
+- Soft delete toàn bộ (isActive=false)
+- Xử lý lỗi: try/catch toàn bộ, log rõ ràng
+- CORS config cho phép mọi origin
+- Tiếng Việt toàn bộ giao diện
+- Không để trang trắng: luôn có empty state
+
+=== THỨ TỰ LÀM ===
+Từng bước, hỏi "Tiếp tục không?" trước khi làm bước kế:
+
+Bước 1: pom.xml + application.properties
+Bước 2: FirebaseConfig.java + serviceAccountKey hướng dẫn
+Bước 3: SecurityConfig + WebSocketConfig
+Bước 4: 5 Firebase Service classes
+Bước 5: FirestoreListenerService (realtime listener)
+Bước 6: REST API Controllers (cho Flutter)
+Bước 7: Web Controllers (admin pages)
+Bước 8: base.html + admin.css + admin.js
+Bước 9: login.html + dashboard/index.html
+Bước 10: products/list.html + form.html
+Bước 11: orders/list.html
+Bước 12: revenue/index.html
+Bước 13: users/list.html + notifications/list.html
+
+Code gọn, đúng, chạy được ngay.
+Giải thích ngắn 1-2 dòng trước mỗi bước.
