@@ -1,9 +1,7 @@
 /* Nhiệm vụ
 Hiển thị một danh mục sản phẩm.
 
-Dùng ở:
-HomeScreen
-CategoryScreen
+
 
 Nội dung hiển thị
 - Tên danh mục
