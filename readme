@@ -1,0 +1,127 @@
+lib/
+├── main.dart
+├── firebase_options.dart
+│
+├── config/
+│   ├── app_routes.dart
+│   └── app_theme.dart
+│
+├── models/
+│   ├── user_model.dart
+│   ├── product_model.dart
+│   ├── category_model.dart
+│   ├── cart_item_model.dart
+│   ├── order_model.dart
+│   └── review_model.dart
+│
+├── providers/
+│   ├── auth_provider.dart
+│   ├── product_provider.dart
+│   ├── cart_provider.dart
+│   ├── order_provider.dart
+│   └── search_provider.dart
+│
+├── services/
+│   ├── auth_service.dart
+│   ├── product_service.dart
+│   ├── cart_service.dart
+│   ├── order_service.dart
+│   └── review_service.dart
+│
+├── screens/
+│   ├── home_screen.dart              ← (1) Trang chủ
+│   ├── product_list_screen.dart      ← (2) Danh sách sản phẩm
+│   ├── product_detail_screen.dart    ← (3) Chi tiết sản phẩm
+│   ├── cart_screen.dart              ← (4) Giỏ hàng
+│   ├── checkout_screen.dart          ← (5) Điền thông tin giao hàng
+│   ├── payment_method_screen.dart    ← (6) Chọn phương thức thanh toán
+│   ├── order_confirm_screen.dart     ← (7) Xác nhận đơn hàng
+│   ├── order_success_screen.dart     ← (8) Đặt hàng thành công
+│   ├── order_history_screen.dart     ← (9) Lịch sử mua hàng
+│   ├── order_detail_screen.dart      ← (10) Chi tiết đơn hàng
+│   ├── search_screen.dart
+│   └── auth/
+│       ├── login_screen.dart
+│       └── register_screen.dart
+│
+├── widgets/
+│   ├── common/
+│   │   ├── bottom_nav_bar.dart
+│   │   ├── loading_widget.dart
+│   │   └── primary_button.dart
+│   ├── home/
+│   │   ├── banner_slider.dart
+│   │   ├── category_section.dart
+│   │   └── featured_products.dart
+│   ├── product/
+│   │   ├── product_card.dart
+│   │   ├── quantity_selector.dart
+│   │   ├── rating_stars.dart
+│   │   └── review_list.dart
+│   ├── cart/
+│   │   ├── cart_item_tile.dart
+│   │   └── cart_summary.dart
+│   └── order/
+│       ├── order_card.dart
+│       └── order_status_badge.dart
+│
+└── utils/
+    ├── formatters.dart       ← format tiền, ngày tháng
+    ├── validators.dart       ← validate form
+    └── constants.dart        ← màu, chuỗi, config chung
+
+assets/
+├── images/
+│   ├── banners/
+│   ├── categories/
+│   └── products/
+└── fonts/
+
+Trang chủ
+   ↓
+Danh sách sản phẩm
+   ↓
+Chi tiết sản phẩm
+   ↓
+Thêm vào giỏ
+   ↓
+Thanh toán
+   ↓
+Điền thông tin
+   ↓
+Chọn phương thức thanh toán
+   ↓
+Xác nhận đơn
+   ↓
+Lịch sử mua
+   ↓
+Chi tiết đơn
+
+✅ lib/config/app_theme.dart
+✅ lib/config/app_routes.dart
+✅ lib/models/product_model.dart
+✅ lib/models/cart_item_model.dart
+✅ lib/models/order_model.dart
+✅ lib/utils/mock_data.dart
+✅ lib/utils/formatters.dart
+✅ lib/utils/validators.dart
+✅ lib/providers/cart_provider.dart
+✅ lib/providers/order_provider.dart
+✅ lib/providers/product_provider.dart
+✅ lib/main.dart
+✅ lib/widgets/common/bottom_nav_bar.dart
+✅ lib/widgets/home/banner_slider.dart
+✅ lib/widgets/home/category_section.dart
+✅ lib/widgets/home/featured_products.dart
+✅ lib/widgets/product/product_card.dart
+✅ lib/screens/home_screen.dart
+✅ lib/screens/product_list_screen.dart
+✅ lib/screens/product_detail_screen.dart
+✅ lib/screens/cart_screen.dart
+✅ lib/screens/checkout_screen.dart
+✅ lib/screens/payment_method_screen.dart
+✅ lib/screens/order_confirm_screen.dart
+✅ lib/screens/order_success_screen.dart
+✅ lib/screens/order_history_screen.dart
+✅ lib/screens/order_detail_screen.dart
+✅ lib/screens/search_screen.dart

@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'config/app_theme.dart';
+import 'config/app_routes.dart';
+import 'providers/cart_provider.dart';
+import 'providers/order_provider.dart';
+import 'providers/product_provider.dart';
 
-import 'firebase_options.dart';
-import 'screens/home_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
+void main() {
   runApp(const MyApp());
 }
 
@@ -19,10 +15,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Shop App',
-      home: HomeScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Tech Store',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.theme,
+        initialRoute: AppRoutes.home,
+        routes: AppRoutes.routes,
+      ),
     );
   }
 }
