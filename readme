@@ -125,3 +125,52 @@ Chi tiết đơn
 ✅ lib/screens/order_history_screen.dart
 ✅ lib/screens/order_detail_screen.dart
 ✅ lib/screens/search_screen.dart
+
+//========================================
+đã làm hôm nay 31/5
+✅ screens/auth/login_screen.dart
+✅ screens/auth/register_screen.dart
+✅ models/user_model.dart
+✅ models/category_model.dart
+✅ models/review_model.dart
+✅ providers/auth_provider.dart
+✅ providers/search_provider.dart
+✅ widgets/common/loading_widget.dart
+✅ widgets/common/primary_button.dart
+✅ widgets/product/quantity_selector.dart
+✅ widgets/product/rating_stars.dart
+✅ widgets/product/review_list.dart
+✅ widgets/cart/cart_item_tile.dart
+✅ widgets/cart/cart_summary.dart
+✅ widgets/order/order_card.dart
+✅ widgets/order/order_status_badge.dart
+✅ utils/constants.dart
+✅ config/app_routes.dart  (cập nhật)
+✅ main.dart               (cập nhật)
+
+cần chỉnh như sau:
+1:cập nhật và nâng cấp lại toàn bộ giao diện sao cho nó đẹp hơn và hiệu ứng animation nhìn mượt mà hơn kèm hiệu ứng hover khi tương tác các trang điều hướng.
+2:Cập nhật trang uiux đăng ký đăng nhập hiện tại web chưa có, và phần thanh toán thì phần qr sẽ in mã qr, thẻ thì cho form điền thông tin thẻ.
+3:Đảm bảo đúng luồng hoạt động và giao dieennj của các luồng phỉa nâng cấp chuẩn giao diện mobile.
+
+luồng : (Lưu ý hiện tại chưa xem được profile các nhân cần cập nhật và tạo thiết kế uiux cho trang các nhân đó)
+
+Trang chủ
+   ↓
+Danh sách sản phẩm
+   ↓
+Chi tiết sản phẩm
+   ↓
+Thêm vào giỏ
+   ↓
+Thanh toán
+   ↓
+Điền thông tin
+   ↓
+Chọn phương thức thanh toán
+   ↓
+Xác nhận đơn
+   ↓
+Lịch sử mua
+   ↓
+Chi tiết đơn

@@ -1,53 +1,35 @@
-// Thông tin người dùng
-class AppUser {
+class UserModel {
   final String id;
+  final String name;
   final String email;
-  final String fullName;
-  final String? phone;
-  final String? avatar;
-  final String? address;
-  final DateTime createdAt;
+  final String phone;
+  final String avatarUrl;
+  final String address;
 
-  AppUser({
+  UserModel({
     required this.id,
+    required this.name,
     required this.email,
-    required this.fullName,
-    this.phone,
-    this.avatar,
-    this.address,
-    required this.createdAt,
+    this.phone = '',
+    this.avatarUrl = '',
+    this.address = '',
   });
 
-  // Convert from JSON
-  factory AppUser.fromJson(Map<String, dynamic> json) {
-    return AppUser(
-      id: json['id'] ?? '',
-      email: json['email'] ?? '',
-      fullName: json['fullName'] ?? '',
-      phone: json['phone'],
-      avatar: json['avatar'],
-      address: json['address'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-    );
-  }
+  factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
+        id: map['id'] ?? '',
+        name: map['name'] ?? '',
+        email: map['email'] ?? '',
+        phone: map['phone'] ?? '',
+        avatarUrl: map['avatarUrl'] ?? '',
+        address: map['address'] ?? '',
+      );
 
-  // Convert to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'fullName': fullName,
-      'phone': phone,
-      'avatar': avatar,
-      'address': address,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  @override
-  String toString() {
-    return 'AppUser(id: $id, email: $email, fullName: $fullName)';
-  }
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'avatarUrl': avatarUrl,
+        'address': address,
+      };
 }
