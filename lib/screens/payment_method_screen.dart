@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/app_theme.dart';
+
 import '../config/app_routes.dart';
+import '../config/app_theme.dart';
 import '../providers/cart_provider.dart';
 import '../utils/formatters.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
   const PaymentMethodScreen({super.key});
+
   @override
   State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
 }
@@ -48,6 +50,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final shippingInfo = _shippingInfoFromRoute(context);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -64,14 +67,16 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
-                    children: _methods.asMap().entries.map((e) {
-                      final i = e.key;
-                      final m = e.value;
-                      final isSelected = _selected == m['id'];
+                    children: _methods.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final method = entry.value;
+                      final isSelected = _selected == method['id'];
                       return Column(
                         children: [
                           InkWell(
-                            onTap: () => setState(() => _selected = m['id']),
+                            onTap: () => setState(
+                              () => _selected = method['id'] as String,
+                            ),
                             borderRadius: BorderRadius.circular(16),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -80,7 +85,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  // Radio
                                   Container(
                                     width: 22,
                                     height: 22,
@@ -95,40 +99,37 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 14),
-                                  // Icon
                                   Container(
                                     width: 44,
                                     height: 44,
                                     decoration: BoxDecoration(
-                                      color: (m['color'] as Color).withOpacity(
-                                        0.1,
-                                      ),
+                                      color: (method['color'] as Color)
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
-                                      m['icon'] as IconData,
-                                      color: m['color'] as Color,
+                                      method['icon'] as IconData,
+                                      color: method['color'] as Color,
                                       size: 24,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  // Text
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          m['title'],
+                                          method['title'] as String,
                                           style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        if ((m['subtitle'] as String)
+                                        if ((method['subtitle'] as String)
                                             .isNotEmpty)
                                           Text(
-                                            m['subtitle'],
+                                            method['subtitle'] as String,
                                             style: const TextStyle(
                                               fontSize: 12,
                                               color: AppTheme.grey,
@@ -137,31 +138,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                       ],
                                     ),
                                   ),
-                                  // MoMo logo
-                                  if (m['id'] == 'MOMO')
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE91E8C),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Center(
-                                        child: Text(
-                                          'M',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),
                           ),
-                          if (i < _methods.length - 1)
+                          if (index < _methods.length - 1)
                             const Divider(height: 1, indent: 16, endIndent: 16),
                         ],
                       );
@@ -171,7 +152,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ],
             ),
           ),
-          // Bottom total + confirm
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             decoration: const BoxDecoration(
@@ -211,7 +191,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   onPressed: () => Navigator.pushNamed(
                     context,
                     AppRoutes.orderConfirm,
-                    arguments: _selected,
+                    arguments: {
+                      'paymentMethod': _selected,
+                      'shippingInfo': shippingInfo,
+                    },
                   ),
                   child: const Text('Xác nhận thanh toán'),
                 ),
@@ -221,5 +204,15 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         ],
       ),
     );
+  }
+
+  Map<String, String> _shippingInfoFromRoute(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      return args.map(
+        (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+      );
+    }
+    return <String, String>{};
   }
 }

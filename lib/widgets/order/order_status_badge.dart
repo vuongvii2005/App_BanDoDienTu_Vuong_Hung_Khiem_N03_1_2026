@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
+
 import '../../models/order_model.dart';
 
 class OrderStatusBadge extends StatelessWidget {
   final OrderStatus status;
+
   const OrderStatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final order = _mock(status);
+    final order = _statusInfo(status);
+    final color = order['color'] as Color;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: order['color'].withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(order['label'],
-          style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: order['color'])),
+      child: Text(
+        order['label'] as String,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 
-  Map<String, dynamic> _mock(OrderStatus s) {
-    switch (s) {
+  Map<String, dynamic> _statusInfo(OrderStatus status) {
+    switch (status) {
       case OrderStatus.pending:
         return {'label': 'Chờ xác nhận', 'color': const Color(0xFFFF9800)};
       case OrderStatus.confirmed:

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/app_theme.dart';
+
 import '../config/app_routes.dart';
+import '../config/app_theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
-import '../providers/product_provider.dart';
 import '../widgets/common/bottom_nav_bar.dart';
 import '../widgets/home/banner_slider.dart';
 import '../widgets/home/category_section.dart';
@@ -11,6 +12,7 @@ import '../widgets/home/featured_products.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -20,7 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
+    _loadCartForCurrentUser(auth, cart);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -29,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(cart.itemCount),
+              _buildHeader(auth),
               _buildSearchBar(),
               const SizedBox(height: 16),
               const BannerSlider(),
@@ -51,80 +55,87 @@ class _HomeScreenState extends State<HomeScreen> {
           if (i == 1) Navigator.pushNamed(context, AppRoutes.productList);
           if (i == 2) Navigator.pushNamed(context, AppRoutes.cart);
           if (i == 3) Navigator.pushNamed(context, AppRoutes.orderHistory);
+          if (i == 4 && !auth.isLoggedIn) {
+            Navigator.pushNamed(context, AppRoutes.login);
+          }
         },
       ),
     );
   }
 
-  Widget _buildHeader(int cartCount) {
+  void _loadCartForCurrentUser(AuthProvider auth, CartProvider cart) {
+    final uid = auth.currentUser?.uid;
+    if (uid == null) {
+      if (cart.items.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => cart.clearLocal());
+      }
+      return;
+    }
+
+    if (cart.userId == uid || cart.isLoading) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<CartProvider>().loadCart(uid);
+    });
+  }
+
+  Widget _buildHeader(AuthProvider auth) {
+    final user = auth.userModel;
+    final name = user?.fullName.isNotEmpty == true ? user!.fullName : 'Khách';
+    final avatarUrl = user?.avatarUrl ?? '';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         children: [
-          // Avatar
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.greyLight,
-              image: const DecorationImage(
-                image: NetworkImage('https://i.pravatar.cc/100'),
-                fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () {
+              if (!auth.isLoggedIn) {
+                Navigator.pushNamed(context, AppRoutes.login);
+              }
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.greyLight,
+                image: avatarUrl.isEmpty
+                    ? null
+                    : DecorationImage(
+                        image: NetworkImage(avatarUrl),
+                        fit: BoxFit.cover,
+                      ),
               ),
+              child: avatarUrl.isEmpty
+                  ? const Icon(Icons.person_outline, color: AppTheme.grey)
+                  : null,
             ),
           ),
           const SizedBox(width: 10),
-          // Greeting
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Xin chào,',
-                style: TextStyle(fontSize: 12, color: AppTheme.grey),
-              ),
-              Row(
-                children: [
-                  Text(
-                    'Hi ',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  Text('👋', style: TextStyle(fontSize: 16)),
-                ],
-              ),
-            ],
-          ),
-          const Spacer(),
-          // Notification icon
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, size: 26),
-                onPressed: () {},
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '2',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Xin chào,',
+                  style: TextStyle(fontSize: 12, color: AppTheme.grey),
+                ),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, size: 26),
+            onPressed: () {},
           ),
         ],
       ),
@@ -143,20 +154,20 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.greyLight),
           ),
-          child: Row(
+          child: const Row(
             children: [
-              const SizedBox(width: 14),
-              const Icon(Icons.search, color: AppTheme.grey, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
+              SizedBox(width: 14),
+              Icon(Icons.search, color: AppTheme.grey, size: 20),
+              SizedBox(width: 8),
+              Expanded(
                 child: Text(
                   'Tìm sản phẩm, thương hiệu...',
                   style: TextStyle(color: AppTheme.grey, fontSize: 14),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.tune, color: AppTheme.grey, size: 20),
-                onPressed: () {},
+              Padding(
+                padding: EdgeInsets.only(right: 14),
+                child: Icon(Icons.tune, color: AppTheme.grey, size: 20),
               ),
             ],
           ),
@@ -190,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCountdown() {
     return Row(
-      children: ['02', '18', '45'].asMap().entries.map((e) {
+      children: ['02', '18', '45'].asMap().entries.map((entry) {
         return Row(
           children: [
             Container(
@@ -200,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                e.value,
+                entry.value,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -208,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            if (e.key < 2)
+            if (entry.key < 2)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 3),
                 child: Text(

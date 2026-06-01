@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../config/app_theme.dart';
+import 'package:provider/provider.dart';
+
 import '../../config/app_routes.dart';
+import '../../config/app_theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/cart_provider.dart';
 import '../../utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -14,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -25,6 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: AppTheme.white,
       body: SafeArea(
@@ -36,7 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                // Logo
                 Center(
                   child: Container(
                     width: 72,
@@ -45,23 +50,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child:
-                        const Icon(Icons.bolt, color: Colors.white, size: 40),
+                    child: const Icon(Icons.bolt, color: Colors.white, size: 40),
                   ),
                 ),
                 const SizedBox(height: 24),
                 const Center(
-                  child: Text('Tech Store',
-                      style:
-                          TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'Tech Store',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+                  ),
                 ),
                 const Center(
-                  child: Text('Đăng nhập để tiếp tục',
-                      style: TextStyle(fontSize: 14, color: AppTheme.grey)),
+                  child: Text(
+                    'Đăng nhập để tiếp tục',
+                    style: TextStyle(fontSize: 14, color: AppTheme.grey),
+                  ),
                 ),
                 const SizedBox(height: 40),
-
-                // Email
                 _label('Email'),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -74,100 +79,120 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Password
                 _label('Mật khẩu'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passCtrl,
                   obscureText: _obscure,
-                  validator: (v) => (v == null || v.length < 6)
+                  validator: (value) => (value == null || value.length < 6)
                       ? 'Mật khẩu ít nhất 6 ký tự'
                       : null,
                   decoration: InputDecoration(
-                    hintText: '••••••••',
+                    hintText: '********',
                     prefixIcon: const Icon(Icons.lock_outline, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                          _obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 20),
+                        _obscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        size: 20,
+                      ),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                // Forgot password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {},
-                    child: const Text('Quên mật khẩu?',
-                        style: TextStyle(color: AppTheme.primary)),
+                    child: const Text(
+                      'Quên mật khẩu?',
+                      style: TextStyle(color: AppTheme.primary),
+                    ),
                   ),
                 ),
+                if (auth.error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    auth.error!,
+                    style: const TextStyle(color: AppTheme.error),
+                  ),
+                ],
                 const SizedBox(height: 8),
-
-                // Login button
                 ElevatedButton(
-                  onPressed: _loading ? null : _login,
-                  child: _loading
+                  onPressed: auth.isLoading ? null : _login,
+                  child: auth.isLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Text('Đăng nhập'),
                 ),
                 const SizedBox(height: 16),
-
-                // Divider
-                Row(children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('hoặc',
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'hoặc',
                         style: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 13)),
-                  ),
-                  const Expanded(child: Divider()),
-                ]),
+                          color: Colors.grey.shade400,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
                 const SizedBox(height: 16),
-
-                // Google login
                 OutlinedButton.icon(
                   onPressed: () {},
-                  icon: const Text('G',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.red)),
-                  label: const Text('Đăng nhập với Google',
-                      style: TextStyle(color: AppTheme.black)),
+                  icon: const Text(
+                    'G',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.red,
+                    ),
+                  ),
+                  label: const Text(
+                    'Đăng nhập với Google',
+                    style: TextStyle(color: AppTheme.black),
+                  ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 52),
                     side: BorderSide(color: Colors.grey.shade300),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Register link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Chưa có tài khoản? ',
-                        style: TextStyle(color: AppTheme.grey)),
+                    const Text(
+                      'Chưa có tài khoản? ',
+                      style: TextStyle(color: AppTheme.grey),
+                    ),
                     GestureDetector(
                       onTap: () => Navigator.pushReplacementNamed(
-                          context, AppRoutes.register),
-                      child: const Text('Đăng ký ngay',
-                          style: TextStyle(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.w700)),
+                        context,
+                        AppRoutes.register,
+                      ),
+                      child: const Text(
+                        'Đăng ký ngay',
+                        style: TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -179,15 +204,30 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _label(String text) => Text(text,
+  Widget _label(String text) {
+    return Text(
+      text,
       style: const TextStyle(
-          fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.grey));
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.grey,
+      ),
+    );
+  }
 
-  void _login() async {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _loading = false);
-    if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.login(_emailCtrl.text, _passCtrl.text);
+    if (!ok || !mounted) return;
+
+    final uid = auth.currentUser?.uid;
+    if (uid != null) {
+      await context.read<CartProvider>().loadCart(uid);
+    }
+
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 }

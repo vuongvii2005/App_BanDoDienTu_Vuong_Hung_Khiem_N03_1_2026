@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../config/app_theme.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product/product_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -16,6 +18,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    context.read<ProductProvider>().clearSearch();
     _ctrl.dispose();
     super.dispose();
   }
@@ -23,7 +26,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProductProvider>();
-    final results = _hasQuery ? provider.filtered : [];
+    final results = _hasQuery ? provider.filteredProducts : [];
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -32,9 +35,9 @@ class _SearchScreenState extends State<SearchScreen> {
         title: TextField(
           controller: _ctrl,
           autofocus: true,
-          onChanged: (v) {
-            provider.setSearch(v);
-            setState(() => _hasQuery = v.trim().isNotEmpty);
+          onChanged: (value) {
+            provider.setSearchQuery(value);
+            setState(() => _hasQuery = value.trim().isNotEmpty);
           },
           decoration: const InputDecoration(
             hintText: 'Tìm sản phẩm, thương hiệu...',
@@ -48,7 +51,7 @@ class _SearchScreenState extends State<SearchScreen> {
               icon: const Icon(Icons.clear),
               onPressed: () {
                 _ctrl.clear();
-                provider.setSearch('');
+                provider.clearSearch();
                 setState(() => _hasQuery = false);
               },
             ),
@@ -56,35 +59,41 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: !_hasQuery
           ? _buildSuggestions()
-          : results.isEmpty
-          ? const Center(
-              child: Text(
-                'Không tìm thấy sản phẩm',
-                style: TextStyle(color: AppTheme.grey),
-              ),
-            )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.72,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: results.length,
-              itemBuilder: (_, i) => ProductCard(product: results[i]),
-            ),
+          : provider.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary),
+                )
+              : results.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Không tìm thấy sản phẩm',
+                        style: TextStyle(color: AppTheme.grey),
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.72,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: results.length,
+                      itemBuilder: (_, i) => ProductCard(product: results[i]),
+                    ),
     );
   }
 
   Widget _buildSuggestions() {
     final suggestions = [
-      'iPhone 15 Pro Max',
-      'AirPods Pro',
+      'iPhone',
+      'AirPods',
       'Samsung Galaxy',
-      'MacBook Pro',
+      'MacBook',
       'Apple Watch',
     ];
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -96,29 +105,30 @@ class _SearchScreenState extends State<SearchScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: suggestions
-              .map(
-                (s) => GestureDetector(
-                  onTap: () {
-                    _ctrl.text = s;
-                    context.read<ProductProvider>().setSearch(s);
-                    setState(() => _hasQuery = true);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.greyLight),
-                    ),
-                    child: Text(s, style: const TextStyle(fontSize: 13)),
-                  ),
+          children: suggestions.map((suggestion) {
+            return GestureDetector(
+              onTap: () {
+                _ctrl.text = suggestion;
+                context.read<ProductProvider>().setSearchQuery(suggestion);
+                setState(() => _hasQuery = true);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-              )
-              .toList(),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.greyLight),
+                ),
+                child: Text(
+                  suggestion,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/app_theme.dart';
+
 import '../../config/app_routes.dart';
+import '../../config/app_theme.dart';
 import '../../providers/product_provider.dart';
 import '../product/product_card.dart';
 
@@ -10,11 +11,11 @@ class FeaturedProducts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = context.watch<ProductProvider>().featured;
+    final provider = context.watch<ProductProvider>();
+    final products = provider.featuredProducts;
 
     return Column(
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -25,13 +26,9 @@ class FeaturedProducts extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               GestureDetector(
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.productList,
-                  arguments: 'Tất cả',
-                ),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.productList),
                 child: const Text(
-                  'Xem tất cả »',
+                  'Xem tất cả',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.primary,
@@ -43,18 +40,46 @@ class FeaturedProducts extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Grid
-        SizedBox(
-          height: 220,
-          child: ListView.separated(
+        if (provider.isLoading)
+          const SizedBox(
+            height: 120,
+            child: Center(
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            ),
+          )
+        else if (provider.error != null)
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                SizedBox(width: 150, child: ProductCard(product: products[i])),
+            child: Text(
+              provider.error!,
+              style: const TextStyle(color: AppTheme.grey),
+            ),
+          )
+        else if (products.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Chưa có sản phẩm nổi bật',
+                style: TextStyle(color: AppTheme.grey),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 220,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) => SizedBox(
+                width: 150,
+                child: ProductCard(product: products[i]),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }

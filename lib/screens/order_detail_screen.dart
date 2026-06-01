@@ -1,21 +1,24 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import '../config/app_theme.dart';
 import '../providers/order_provider.dart';
 import '../utils/formatters.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
+
   const OrderDetailScreen({super.key, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
-    final order = context.read<OrderProvider>().getById(orderId);
-    if (order == null)
+    final order = context.watch<OrderProvider>().getOrderById(orderId);
+    if (order == null) {
       return const Scaffold(
         body: Center(child: Text('Không tìm thấy đơn hàng')),
       );
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -29,7 +32,6 @@ class OrderDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Order ID + status
             _card(
               children: [
                 Row(
@@ -48,7 +50,7 @@ class OrderDetailScreen extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: order.statusColor.withOpacity(0.12),
+                        color: order.statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -70,8 +72,6 @@ class OrderDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Shipping info
             _card(
               title: 'Thông tin giao hàng',
               children: [
@@ -83,11 +83,14 @@ class OrderDetailScreen extends StatelessWidget {
                     height: 1.6,
                   ),
                 ),
+                if (order.phone.isNotEmpty)
+                  Text(
+                    order.phone,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.grey),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Products
             _card(
               title: 'Sản phẩm',
               children: [
@@ -103,7 +106,7 @@ class OrderDetailScreen extends StatelessWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: CachedNetworkImage(
-                            imageUrl: item.product.imageUrl,
+                            imageUrl: item.imageUrl,
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
@@ -129,7 +132,7 @@ class OrderDetailScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item.product.name,
+                                item.productName,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -137,9 +140,13 @@ class OrderDetailScreen extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              if (item.selectedStorage.isNotEmpty)
+                              if (item.selectedStorage.isNotEmpty ||
+                                  item.selectedColor.isNotEmpty)
                                 Text(
-                                  '${item.selectedStorage} – ${item.selectedColor}',
+                                  [
+                                    item.selectedStorage,
+                                    item.selectedColor,
+                                  ].where((value) => value.isNotEmpty).join(' - '),
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppTheme.grey,
@@ -152,7 +159,7 @@ class OrderDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              Formatters.currency(item.product.price),
+                              Formatters.currency(item.price),
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -174,8 +181,6 @@ class OrderDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Price summary
             _card(
               children: [
                 _row('Tạm tính', Formatters.currency(order.subtotal)),
