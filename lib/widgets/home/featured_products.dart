@@ -26,7 +26,8 @@ class FeaturedProducts extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               GestureDetector(
-                onTap: () => Navigator.pushNamed(context, AppRoutes.productList),
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.productList),
                 child: const Text(
                   'Xem tất cả',
                   style: TextStyle(
@@ -68,14 +69,15 @@ class FeaturedProducts extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 220,
+            height: 222,
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               itemCount: products.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (_, i) => SizedBox(
-                width: 150,
+                width: 160,
+                height: 218,
                 child: ProductCard(product: products[i]),
               ),
             ),

@@ -1,5 +1,6 @@
 // quản lý đường dẫn màn hình
 import 'package:flutter/material.dart';
+import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/cart_screen.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String search = '/search';
   static const String login = '/login';
   static const String register = '/register';
+  static const String admin = '/admin';
 
   static Map<String, WidgetBuilder> get routes => {
         home: (_) => const HomeScreen(),
@@ -51,5 +53,6 @@ class AppRoutes {
         search: (_) => const SearchScreen(),
         login: (_) => const LoginScreen(),
         register: (_) => const RegisterScreen(),
+        admin: (_) => const AdminDashboardScreen(),
       };
 }

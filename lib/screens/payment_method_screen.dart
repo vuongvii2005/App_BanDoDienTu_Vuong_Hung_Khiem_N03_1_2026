@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../utils/formatters.dart';
 
@@ -50,7 +51,27 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final auth = context.watch<AuthProvider>();
     final shippingInfo = _shippingInfoFromRoute(context);
+
+    if (auth.isGuest || !auth.canBuy) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(title: const Text('Phương thức thanh toán')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              auth.isGuest
+                  ? 'Cần đăng nhập để thanh toán'
+                  : 'Tài khoản này không dùng để mua hàng',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.grey),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.background,

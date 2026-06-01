@@ -40,204 +40,211 @@ class OrderConfirmScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Xác nhận đơn hàng')),
-      body: !auth.isLoggedIn
+      body: auth.isGuest
           ? const Center(
               child: Text(
                 'Cần đăng nhập để đặt hàng',
                 style: TextStyle(color: AppTheme.grey),
               ),
             )
-          : cart.items.isEmpty
+          : !auth.canBuy
               ? const Center(
                   child: Text(
-                    'Giỏ hàng đang trống',
+                    'Tài khoản này không dùng để mua hàng',
                     style: TextStyle(color: AppTheme.grey),
                   ),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildSection(
-                        title: 'Thông tin giao hàng',
-                        action: 'Sửa',
-                        onAction: () => Navigator.pop(context),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                shippingInfo['fullName'] ?? '',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                shippingInfo['address'] ?? '',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.grey,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                shippingInfo['phone'] ?? '',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+              : cart.items.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Giỏ hàng đang trống',
+                        style: TextStyle(color: AppTheme.grey),
                       ),
-                      const SizedBox(height: 12),
-                      _buildSection(
-                        title: 'Phương thức thanh toán',
-                        action: 'Sửa',
-                        onAction: () => Navigator.pop(context),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFFE91E8C)
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildSection(
+                            title: 'Thông tin giao hàng',
+                            action: 'Sửa',
+                            onAction: () => Navigator.pop(context),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    shippingInfo['fullName'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    shippingInfo['address'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.grey,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    shippingInfo['phone'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSection(
+                            title: 'Phương thức thanh toán',
+                            action: 'Sửa',
+                            onAction: () => Navigator.pop(context),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE91E8C)
                                           .withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'M',
-                                    style: TextStyle(
-                                      color: Color(0xFFE91E8C),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 18,
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _paymentLabel(paymentMethod),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSection(
-                        title: 'Sản phẩm (${cart.items.length})',
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(14),
-                          itemCount: cart.items.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 16),
-                          itemBuilder: (_, i) {
-                            final item = cart.items[i];
-                            return Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedNetworkImage(
-                                    imageUrl: item.imageUrl,
-                                    width: 56,
-                                    height: 56,
-                                    fit: BoxFit.cover,
-                                    placeholder: (_, __) => Container(
-                                      width: 56,
-                                      height: 56,
-                                      color: AppTheme.greyLight,
-                                    ),
-                                    errorWidget: (_, __, ___) => Container(
-                                      width: 56,
-                                      height: 56,
-                                      color: AppTheme.greyLight,
-                                      child: const Icon(
-                                        Icons.image_outlined,
-                                        color: AppTheme.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.productName,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                    child: const Center(
+                                      child: Text(
+                                        'M',
+                                        style: TextStyle(
+                                          color: Color(0xFFE91E8C),
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 18,
                                         ),
                                       ),
-                                      if (item.selectedStorage.isNotEmpty)
-                                        Text(
-                                          item.selectedStorage,
-                                          style: const TextStyle(
-                                            fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _paymentLabel(paymentMethod),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSection(
+                            title: 'Sản phẩm (${cart.items.length})',
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(14),
+                              itemCount: cart.items.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 16),
+                              itemBuilder: (_, i) {
+                                final item = cart.items[i];
+                                return Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: CachedNetworkImage(
+                                        imageUrl: item.imageUrl,
+                                        width: 56,
+                                        height: 56,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) => Container(
+                                          width: 56,
+                                          height: 56,
+                                          color: AppTheme.greyLight,
+                                        ),
+                                        errorWidget: (_, __, ___) => Container(
+                                          width: 56,
+                                          height: 56,
+                                          color: AppTheme.greyLight,
+                                          child: const Icon(
+                                            Icons.image_outlined,
                                             color: AppTheme.grey,
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      Formatters.currency(item.price),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    Text(
-                                      'x${item.quantity}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.grey,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.productName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if (item.selectedStorage.isNotEmpty)
+                                            Text(
+                                              item.selectedStorage,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppTheme.grey,
+                                              ),
+                                            ),
+                                        ],
                                       ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          Formatters.currency(item.price),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          'x${item.quantity}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _priceSummary(cart),
+                          if (orderProvider.error != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              orderProvider.error!,
+                              style: const TextStyle(color: AppTheme.error),
+                            ),
+                          ],
+                          const SizedBox(height: 100),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      _priceSummary(cart),
-                      if (orderProvider.error != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          orderProvider.error!,
-                          style: const TextStyle(color: AppTheme.error),
-                        ),
-                      ],
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
+                    ),
       bottomNavigationBar: _buildBottom(
         context,
         auth,
@@ -258,7 +265,10 @@ class OrderConfirmScreen extends StatelessWidget {
     Map<String, String> shippingInfo,
   ) {
     final uid = auth.currentUser?.uid;
-    final canOrder = uid != null && cart.items.isNotEmpty && !orderProvider.isLoading;
+    final canOrder = auth.canBuy &&
+        uid != null &&
+        cart.items.isNotEmpty &&
+        !orderProvider.isLoading;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),

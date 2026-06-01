@@ -335,14 +335,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Future<void> _addToCart(Product product) async {
     final auth = context.read<AuthProvider>();
-    if (!auth.isLoggedIn || auth.currentUser == null) {
+    if (auth.isGuest || auth.currentUser == null) {
       Navigator.pushNamed(context, AppRoutes.login);
+      return;
+    }
+
+    if (!auth.canBuy) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản này không dùng để mua hàng'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
     final storage =
         product.storageOptions.isNotEmpty ? product.storageOptions.first : '';
-    final color = product.colorOptions.isNotEmpty ? product.colorOptions.first : '';
+    final color =
+        product.colorOptions.isNotEmpty ? product.colorOptions.first : '';
 
     await context.read<CartProvider>().addToCart(
           auth.currentUser!.uid,

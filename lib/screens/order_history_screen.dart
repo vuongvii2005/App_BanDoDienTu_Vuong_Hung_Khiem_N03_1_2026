@@ -35,7 +35,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final orderProvider = context.watch<OrderProvider>();
     final uid = auth.currentUser?.uid;
 
-    if (uid != null && _loadedUserId != uid && !orderProvider.isLoading) {
+    if (uid != null &&
+        auth.canBuy &&
+        _loadedUserId != uid &&
+        !orderProvider.isLoading) {
       _loadedUserId = uid;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.read<OrderProvider>().loadOrders(uid);
@@ -44,48 +47,58 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     final filtered = _filter == null
         ? orderProvider.orders
-        : orderProvider.orders.where((order) => order.status == _filter).toList();
+        : orderProvider.orders
+            .where((order) => order.status == _filter)
+            .toList();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Đơn hàng của tôi')),
       body: uid == null
           ? _needLogin()
-          : Column(
-              children: [
-                _filterTabs(),
-                Expanded(
-                  child: orderProvider.isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primary,
-                          ),
-                        )
-                      : filtered.isEmpty
+          : !auth.canBuy
+              ? _roleBlocked()
+              : Column(
+                  children: [
+                    _filterTabs(),
+                    Expanded(
+                      child: orderProvider.isLoading
                           ? const Center(
-                              child: Text(
-                                'Không có đơn hàng',
-                                style: TextStyle(color: AppTheme.grey),
+                              child: CircularProgressIndicator(
+                                color: AppTheme.primary,
                               ),
                             )
-                          : ListView.separated(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (_, i) =>
-                                  _buildOrderCard(context, filtered[i]),
-                            ),
+                          : filtered.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'Không có đơn hàng',
+                                    style: TextStyle(color: AppTheme.grey),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (_, i) =>
+                                      _buildOrderCard(context, filtered[i]),
+                                ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _navIndex,
         onTap: (i) {
           setState(() => _navIndex = i);
           if (i == 0) Navigator.pushReplacementNamed(context, AppRoutes.home);
           if (i == 2) Navigator.pushNamed(context, AppRoutes.cart);
-          if (i == 4 && uid == null) Navigator.pushNamed(context, AppRoutes.login);
+          if (i == 4) {
+            if (uid == null) {
+              Navigator.pushNamed(context, AppRoutes.login);
+            } else if (auth.canManageShop) {
+              Navigator.pushNamed(context, AppRoutes.admin);
+            }
+          }
         },
       ),
     );
@@ -109,6 +122,19 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               child: const Text('Đăng nhập'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _roleBlocked() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Tài khoản này không dùng để mua hàng',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.grey),
         ),
       ),
     );
@@ -142,7 +168,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       color: isActive ? Colors.white : AppTheme.grey,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isActive ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ),

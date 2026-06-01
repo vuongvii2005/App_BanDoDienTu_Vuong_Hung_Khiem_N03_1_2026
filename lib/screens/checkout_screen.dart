@@ -55,12 +55,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
 
-    if (!auth.isLoggedIn) {
+    if (auth.isGuest) {
       return _messageScaffold(
         title: 'Thông tin giao hàng',
         message: 'Cần đăng nhập để thanh toán',
         button: 'Đăng nhập',
         onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+      );
+    }
+
+    if (!auth.canBuy) {
+      return _messageScaffold(
+        title: 'Thông tin giao hàng',
+        message: 'Tài khoản này không dùng để mua hàng',
+        button: 'Về trang chủ',
+        onPressed: () =>
+            Navigator.pushReplacementNamed(context, AppRoutes.home),
       );
     }
 
@@ -104,21 +114,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _dropdown('Quận/Huyện', _district, [
-                        'Quận 1',
-                        'Quận 3',
-                        'Quận 5',
-                        'Quận 7',
-                        'Quận 10',
-                      ], (v) => setState(() => _district = v!)),
+                      child: _dropdown(
+                          'Quận/Huyện',
+                          _district,
+                          [
+                            'Quận 1',
+                            'Quận 3',
+                            'Quận 5',
+                            'Quận 7',
+                            'Quận 10',
+                          ],
+                          (v) => setState(() => _district = v!)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _dropdown('Tỉnh/Thành phố', _city, [
-                        'TP. Hồ Chí Minh',
-                        'Hà Nội',
-                        'Đà Nẵng',
-                      ], (v) => setState(() => _city = v!)),
+                      child: _dropdown(
+                          'Tỉnh/Thành phố',
+                          _city,
+                          [
+                            'TP. Hồ Chí Minh',
+                            'Hà Nội',
+                            'Đà Nẵng',
+                          ],
+                          (v) => setState(() => _city = v!)),
                     ),
                   ],
                 ),

@@ -30,7 +30,7 @@ class _CartScreenState extends State<CartScreen> {
     final cart = context.watch<CartProvider>();
     final uid = auth.currentUser?.uid;
 
-    if (uid != null && cart.userId != uid && !cart.isLoading) {
+    if (uid != null && auth.canBuy && cart.userId != uid && !cart.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.read<CartProvider>().loadCart(uid);
       });
@@ -41,7 +41,7 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: const Text('Giỏ hàng'),
         actions: [
-          if (uid != null && cart.items.isNotEmpty)
+          if (uid != null && auth.canBuy && cart.items.isNotEmpty)
             TextButton(
               onPressed: () => cart.clearCart(uid),
               child: const Text(
@@ -53,35 +53,37 @@ class _CartScreenState extends State<CartScreen> {
       ),
       body: uid == null
           ? _buildNeedLogin()
-          : cart.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: AppTheme.primary),
-                )
-              : cart.items.isEmpty
-                  ? _buildEmpty()
-                  : Column(
-                      children: [
-                        if (cart.error != null)
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              cart.error!,
-                              style: const TextStyle(color: AppTheme.error),
+          : !auth.canBuy
+              ? _buildRoleBlocked()
+              : cart.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppTheme.primary),
+                    )
+                  : cart.items.isEmpty
+                      ? _buildEmpty()
+                      : Column(
+                          children: [
+                            if (cart.error != null)
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text(
+                                  cart.error!,
+                                  style: const TextStyle(color: AppTheme.error),
+                                ),
+                              ),
+                            Expanded(
+                              child: ListView.separated(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: cart.items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (_, i) =>
+                                    _buildCartItem(context, cart, uid, i),
+                              ),
                             ),
-                          ),
-                        Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: cart.items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (_, i) =>
-                                _buildCartItem(context, cart, uid, i),
-                          ),
+                            _buildSummary(context, cart),
+                          ],
                         ),
-                        _buildSummary(context, cart),
-                      ],
-                    ),
     );
   }
 
@@ -109,6 +111,19 @@ class _CartScreenState extends State<CartScreen> {
               child: const Text('Đăng nhập'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleBlocked() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Tài khoản này không dùng để mua hàng',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: AppTheme.grey),
         ),
       ),
     );

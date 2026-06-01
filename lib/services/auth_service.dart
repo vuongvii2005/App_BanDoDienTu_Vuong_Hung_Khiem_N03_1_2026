@@ -1,10 +1,13 @@
-//xử lý Firebase Auth
+// Xu ly Firebase Auth va user document tren Firestore.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_model.dart';
 
 class AuthService {
+  static const String adminLoginName = 'admin';
+  static const String adminEmail = 'admin@techstore.local';
+
   AuthService({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
@@ -17,19 +20,21 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  User? getCurrentUser() => _auth.currentUser;
+
   Future<UserCredential> login(String email, String password) {
     return _auth.signInWithEmailAndPassword(
-      email: email.trim(),
+      email: _authEmail(email),
       password: password,
     );
   }
 
-  Future<UserModel> register(
-    String email,
-    String password,
-    String fullName,
-    String phone,
-  ) async {
+  Future<UserModel> register({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
@@ -37,32 +42,33 @@ class AuthService {
 
     final user = credential.user;
     if (user == null) {
-      throw FirebaseAuthException(
-        code: 'user-not-found',
-        message: 'Không tạo được tài khoản.',
-      );
+      throw FirebaseAuthException(code: 'user-not-found');
     }
 
-    await user.updateDisplayName(fullName.trim());
+    final trimmedName = fullName.trim();
+    final trimmedEmail = email.trim();
+    final trimmedPhone = phone.trim();
+
+    await user.updateDisplayName(trimmedName);
 
     final userModel = UserModel(
       uid: user.uid,
-      fullName: fullName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
+      fullName: trimmedName,
+      email: trimmedEmail,
+      phone: trimmedPhone,
       avatarUrl: '',
       address: '',
-      role: 'user',
+      role: UserModel.roleUser,
     );
 
     await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
-      'fullName': userModel.fullName,
-      'email': userModel.email,
-      'phone': userModel.phone,
+      'fullName': trimmedName,
+      'email': trimmedEmail,
+      'phone': trimmedPhone,
       'avatarUrl': '',
       'address': '',
-      'role': 'user',
+      'role': UserModel.roleUser,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -75,31 +81,52 @@ class AuthService {
   }
 
   Future<UserModel?> getUserModel(String uid) async {
+    if (uid.trim().isEmpty) return null;
+
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) return null;
+
     return UserModel.fromFirestore(doc);
+  }
+
+  Future<void> resetPassword(String email) {
+    return _auth.sendPasswordResetEmail(email: _authEmail(email));
+  }
+
+  String _authEmail(String value) {
+    final login = value.trim();
+    if (login.toLowerCase() == adminLoginName) return adminEmail;
+    return login;
   }
 
   String errorMessage(Object error) {
     if (error is FirebaseAuthException) {
       switch (error.code) {
-        case 'email-already-in-use':
-          return 'Email này đã được sử dụng';
-        case 'weak-password':
-          return 'Mật khẩu quá yếu';
         case 'user-not-found':
-          return 'Không tìm thấy tài khoản';
+          return 'Tài khoản không tồn tại';
         case 'wrong-password':
-          return 'Sai mật khẩu';
+          return 'Mật khẩu không đúng';
+        case 'email-already-in-use':
+          return 'Email đã được sử dụng';
         case 'invalid-email':
           return 'Email không hợp lệ';
-        case 'invalid-credential':
-          return 'Email hoặc mật khẩu không đúng';
+        case 'weak-password':
+          return 'Mật khẩu quá yếu';
         case 'network-request-failed':
           return 'Lỗi kết nối mạng';
+        case 'invalid-credential':
+          return 'Email hoặc mật khẩu không đúng';
+        case 'too-many-requests':
+          return 'Bạn thao tác quá nhiều lần, vui lòng thử lại sau';
+        default:
+          return 'Đã xảy ra lỗi, vui lòng thử lại';
       }
-      return error.message ?? 'Đăng nhập thất bại';
     }
-    return 'Đã có lỗi xảy ra';
+
+    if (error is FirebaseException && error.code == 'network-request-failed') {
+      return 'Lỗi kết nối mạng';
+    }
+
+    return 'Đã xảy ra lỗi, vui lòng thử lại';
   }
 }

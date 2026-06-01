@@ -6,20 +6,37 @@ Future<void> seedFirestoreData() async {
 
   final categoryBatch = firestore.batch();
   for (final category in _categories) {
-    final docRef = firestore.collection('categories').doc(category['id'] as String);
+    final docRef =
+        firestore.collection('categories').doc(category['id'] as String);
     categoryBatch.set(docRef, category, SetOptions(merge: true));
   }
   await categoryBatch.commit();
 
   final productBatch = firestore.batch();
   for (final product in _products) {
-    final docRef = firestore.collection('products').doc(product['id'] as String);
+    final docRef =
+        firestore.collection('products').doc(product['id'] as String);
     productBatch.set(docRef, product, SetOptions(merge: true));
   }
   await productBatch.commit();
 }
 
 final _now = FieldValue.serverTimestamp();
+
+const Map<String, String> _categoryImageLinks = {
+  'phone':
+      'https://cdn.tgdd.vn/Products/Images/42/305658/iphone-15-pro-max-blue-1-1.jpg',
+  'laptop':
+      'https://cdn.tgdd.vn/Products/Images/44/282827/apple-macbook-air-m2-2022-01.jpg',
+  'tablet':
+      'https://cdn.tgdd.vn/Products/Images/522/325534/ipad-pro-13-inch-m4-lte-black-1.jpg',
+  'headphone':
+      'https://cdn.tgdd.vn/Products/Images/54/289781/airpods-pro-2nd-generation-0.jpg',
+  'watch':
+      'https://cdn.tgdd.vn/Products/Images/7077/314708/apple-watch-s9-45mm-vien-nhom-day-silicone-trang-starlight-1.jpg',
+  'accessory':
+      'https://cdn.tgdd.vn/Products/Images/9499/230315/adapter-sac-type-c-20w-cho-iphone-ipad-apple-mhje3-1-org.jpg',
+};
 
 final List<Map<String, dynamic>> _categories = [
   _category('phone', 'Điện thoại', 'P', 1),
@@ -40,7 +57,7 @@ Map<String, dynamic> _category(
     'id': id,
     'name': name,
     'icon': icon,
-    'imageUrl': '',
+    'imageUrl': _categoryImageLinks[id] ?? '',
     'sortOrder': sortOrder,
     'isActive': true,
     'createdAt': _now,
@@ -56,7 +73,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'phone',
     price: 1199.0,
     oldPrice: 1299.0,
-    description: 'Điện thoại cao cấp với chip A17 Pro, camera 48MP và khung titan.',
+    description:
+        'Điện thoại cao cấp với chip A17 Pro, camera 48MP và khung titan.',
     storageOptions: ['256GB', '512GB', '1TB'],
     colorOptions: ['Titan tự nhiên', 'Titan đen', 'Titan trắng', 'Titan xanh'],
     stock: 20,
@@ -71,7 +89,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'phone',
     price: 799.0,
     oldPrice: 899.0,
-    description: 'iPhone màn hình Super Retina XDR, Dynamic Island và camera kép.',
+    description:
+        'iPhone màn hình Super Retina XDR, Dynamic Island và camera kép.',
     storageOptions: ['128GB', '256GB', '512GB'],
     colorOptions: ['Đen', 'Xanh', 'Hồng', 'Vàng'],
     stock: 35,
@@ -144,7 +163,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'laptop',
     price: 1599.0,
     oldPrice: 0.0,
-    description: 'Laptop hiệu năng cao với chip M3 và màn hình Liquid Retina XDR.',
+    description:
+        'Laptop hiệu năng cao với chip M3 và màn hình Liquid Retina XDR.',
     storageOptions: ['512GB', '1TB', '2TB'],
     colorOptions: ['Bạc', 'Xám không gian'],
     stock: 12,
@@ -173,7 +193,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'laptop',
     price: 1499.0,
     oldPrice: 1599.0,
-    description: 'Laptop gaming 14 inch mạnh mẽ, phù hợp chơi game và sáng tạo.',
+    description:
+        'Laptop gaming 14 inch mạnh mẽ, phù hợp chơi game và sáng tạo.',
     storageOptions: ['1TB', '2TB'],
     colorOptions: ['Trắng', 'Xám'],
     stock: 8,
@@ -201,7 +222,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'tablet',
     price: 999.0,
     oldPrice: 0.0,
-    description: 'Máy tính bảng cao cấp với chip M4 và màn hình Ultra Retina XDR.',
+    description:
+        'Máy tính bảng cao cấp với chip M4 và màn hình Ultra Retina XDR.',
     storageOptions: ['256GB', '512GB', '1TB'],
     colorOptions: ['Bạc', 'Đen không gian'],
     stock: 15,
@@ -272,7 +294,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'headphone',
     price: 249.0,
     oldPrice: 279.0,
-    description: 'Tai nghe không dây có chống ồn chủ động và âm thanh không gian.',
+    description:
+        'Tai nghe không dây có chống ồn chủ động và âm thanh không gian.',
     storageOptions: [],
     colorOptions: ['Trắng'],
     stock: 40,
@@ -287,7 +310,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'headphone',
     price: 399.0,
     oldPrice: 449.0,
-    description: 'Tai nghe chụp tai chống ồn cao cấp, pin lâu và âm thanh chi tiết.',
+    description:
+        'Tai nghe chụp tai chống ồn cao cấp, pin lâu và âm thanh chi tiết.',
     storageOptions: [],
     colorOptions: ['Đen', 'Bạc'],
     stock: 25,
@@ -301,7 +325,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'headphone',
     price: 129.0,
     oldPrice: 159.0,
-    description: 'Tai nghe chống ồn phổ thông, âm bass mạnh và kết nối ổn định.',
+    description:
+        'Tai nghe chống ồn phổ thông, âm bass mạnh và kết nối ổn định.',
     storageOptions: [],
     colorOptions: ['Đen', 'Xanh', 'Trắng'],
     stock: 36,
@@ -456,7 +481,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'accessory',
     price: 89.0,
     oldPrice: 109.0,
-    description: 'Bàn phím cơ không dây layout gọn, phù hợp làm việc và học tập.',
+    description:
+        'Bàn phím cơ không dây layout gọn, phù hợp làm việc và học tập.',
     storageOptions: ['Brown switch', 'Red switch', 'Blue switch'],
     colorOptions: ['Đen', 'Xám'],
     stock: 27,
@@ -470,7 +496,8 @@ final List<Map<String, dynamic>> _products = [
     categoryId: 'accessory',
     price: 49.0,
     oldPrice: 59.0,
-    description: 'Pin dự phòng dung lượng lớn, sạc được nhiều lần cho điện thoại.',
+    description:
+        'Pin dự phòng dung lượng lớn, sạc được nhiều lần cho điện thoại.',
     storageOptions: ['20000mAh'],
     colorOptions: ['Đen'],
     stock: 60,

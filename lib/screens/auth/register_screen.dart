@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/cart_provider.dart';
 import '../../utils/validators.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -21,7 +20,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  bool _obscure = true;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _redirecting = false;
 
   @override
   void dispose() {
@@ -36,11 +37,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    _redirectIfLoggedIn(auth);
 
     return Scaffold(
       backgroundColor: AppTheme.white,
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -48,9 +51,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios, size: 20),
+                IconButton(
+                  onPressed: auth.isLoading
+                      ? null
+                      : () => Navigator.pushReplacementNamed(
+                            context,
+                            AppRoutes.login,
+                          ),
+                  icon: const Icon(Icons.arrow_back_ios, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -66,6 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameCtrl,
+                  textInputAction: TextInputAction.next,
                   validator: Validators.required,
                   decoration: const InputDecoration(
                     hintText: 'Nguyễn Văn A',
@@ -78,6 +89,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                   validator: Validators.phone,
                   decoration: const InputDecoration(
                     hintText: '0901234567',
@@ -90,6 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   validator: Validators.email,
                   decoration: const InputDecoration(
                     hintText: 'example@email.com',
@@ -101,21 +114,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passCtrl,
-                  obscureText: _obscure,
-                  validator: (value) => (value == null || value.length < 6)
-                      ? 'Mật khẩu ít nhất 6 ký tự'
-                      : null,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  validator: Validators.password,
                   decoration: InputDecoration(
                     hintText: '********',
                     prefixIcon: const Icon(Icons.lock_outline, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscure
+                        _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
                     ),
                   ),
                 ),
@@ -124,21 +138,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmCtrl,
-                  obscureText: _obscure,
+                  obscureText: _obscureConfirm,
+                  textInputAction: TextInputAction.done,
                   validator: (value) =>
-                      value != _passCtrl.text ? 'Mật khẩu không khớp' : null,
-                  decoration: const InputDecoration(
+                      Validators.confirmPassword(value, _passCtrl.text),
+                  onFieldSubmitted: (_) {
+                    if (!auth.isLoading) _register();
+                  },
+                  decoration: InputDecoration(
                     hintText: '********',
-                    prefixIcon: Icon(Icons.lock_outline, size: 20),
+                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscureConfirm = !_obscureConfirm);
+                      },
+                    ),
                   ),
                 ),
-                if (auth.error != null) ...[
-                  const SizedBox(height: 14),
-                  Text(
-                    auth.error!,
-                    style: const TextStyle(color: AppTheme.error),
-                  ),
-                ],
                 const SizedBox(height: 28),
                 ElevatedButton(
                   onPressed: auth.isLoading ? null : _register,
@@ -162,10 +184,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: TextStyle(color: AppTheme.grey),
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.login,
-                      ),
+                      onTap: auth.isLoading
+                          ? null
+                          : () => Navigator.pushReplacementNamed(
+                                context,
+                                AppRoutes.login,
+                              ),
                       child: const Text(
                         'Đăng nhập',
                         style: TextStyle(
@@ -196,24 +220,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    final auth = context.read<AuthProvider>();
+    auth.clearError();
+
     if (!_formKey.currentState!.validate()) return;
 
-    final auth = context.read<AuthProvider>();
     final ok = await auth.register(
       _nameCtrl.text,
       _emailCtrl.text,
       _passCtrl.text,
       phone: _phoneCtrl.text,
     );
+    if (!mounted) return;
 
-    if (!ok || !mounted) return;
-
-    final uid = auth.currentUser?.uid;
-    if (uid != null) {
-      await context.read<CartProvider>().loadCart(uid);
+    if (!ok) {
+      _showSnackBar(auth.errorMessage ?? 'Đăng ký thất bại');
+      return;
     }
 
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
+    _goHome();
+  }
+
+  void _redirectIfLoggedIn(AuthProvider auth) {
+    if (_redirecting || auth.isLoading || !auth.isLoggedIn) return;
+    _goHome();
+  }
+
+  void _goHome() {
+    if (_redirecting) return;
+    _redirecting = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (_) => false,
+      );
+    });
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
