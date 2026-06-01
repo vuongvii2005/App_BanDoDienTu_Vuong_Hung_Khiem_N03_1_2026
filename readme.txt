@@ -174,3 +174,19 @@ Xác nhận đơn
 Lịch sử mua
    ↓
 Chi tiết đơn
+// 1/6 
+Đã có Firebase
+Đã có dữ liệu sản phẩm và danh mục
+Đã có đăng nhập / đăng ký
+Đã có phân quyền cơ bản user admin
+tài khoản admin mẫu : admin  admin123
+Đã có giỏ hàng
+Đã có đặt hàng
+Trang cá nhân còn đơn giản
+Admin dashboard mới là khung
+Chưa có chức năng sửa thông tin cá nhân
+Chưa có upload ảnh thực tế
+Review mới là file note( để vương viết cấm động vào)
+Sản phẩm yêu thích chưa có
+Mã giảm giá / voucher chưa thật (nên viết mã giảm giá sớm để thiết kế nhiều thứ khác)
+Thanh toán chưa thực tế(có thể làm sau)
