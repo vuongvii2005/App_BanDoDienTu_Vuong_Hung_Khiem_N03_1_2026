@@ -10,6 +10,8 @@ import '../screens/order_success_screen.dart';
 import '../screens/order_history_screen.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/search_screen.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/auth/register_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -23,26 +25,27 @@ class AppRoutes {
   static const String orderHistory = '/order-history';
   static const String orderDetail = '/order-detail';
   static const String search = '/search';
+  static const String login = '/login';
+  static const String register = '/register';
 
   static Map<String, WidgetBuilder> get routes => {
-    home: (_) => const HomeScreen(),
-    productList: (ctx) => ProductListScreen(
-      category: ModalRoute.of(ctx)!.settings.arguments as String? ?? 'Tất cả',
-    ),
-    productDetail: (ctx) => ProductDetailScreen(
-      productId: ModalRoute.of(ctx)!.settings.arguments as String,
-    ),
-    cart: (_) => const CartScreen(),
-    checkout: (_) => const CheckoutScreen(),
-    paymentMethod: (_) => const PaymentMethodScreen(),
-    orderConfirm: (_) => const OrderConfirmScreen(),
-    orderSuccess: (ctx) => OrderSuccessScreen(
-      orderId: ModalRoute.of(ctx)!.settings.arguments as String,
-    ),
-    orderHistory: (_) => const OrderHistoryScreen(),
-    orderDetail: (ctx) => OrderDetailScreen(
-      orderId: ModalRoute.of(ctx)!.settings.arguments as String,
-    ),
-    search: (_) => const SearchScreen(),
-  };
+        home: (_) => const HomeScreen(),
+        productList: (ctx) => ProductListScreen(
+            category:
+                ModalRoute.of(ctx)!.settings.arguments as String? ?? 'Tất cả'),
+        productDetail: (ctx) => ProductDetailScreen(
+            productId: ModalRoute.of(ctx)!.settings.arguments as String),
+        cart: (_) => const CartScreen(),
+        checkout: (_) => const CheckoutScreen(),
+        paymentMethod: (_) => const PaymentMethodScreen(),
+        orderConfirm: (_) => const OrderConfirmScreen(),
+        orderSuccess: (ctx) => OrderSuccessScreen(
+            orderId: ModalRoute.of(ctx)!.settings.arguments as String),
+        orderHistory: (_) => const OrderHistoryScreen(),
+        orderDetail: (ctx) => OrderDetailScreen(
+            orderId: ModalRoute.of(ctx)!.settings.arguments as String),
+        search: (_) => const SearchScreen(),
+        login: (_) => const LoginScreen(),
+        register: (_) => const RegisterScreen(),
+      };
 }
