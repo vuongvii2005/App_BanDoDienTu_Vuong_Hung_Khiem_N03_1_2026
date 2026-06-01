@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../config/app_theme.dart';
+
 import '../config/app_routes.dart';
+import '../config/app_theme.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final String orderId;
+
   const OrderSuccessScreen({super.key, required this.orderId});
 
   @override
@@ -18,12 +20,11 @@ class OrderSuccessScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              // Confetti / success icon
               Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: AppTheme.success.withOpacity(0.15),
+                  color: AppTheme.success.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -43,7 +44,7 @@ class OrderSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                'Cảm ơn bạn đã mua hàng tại\nTech Store ❤️',
+                'Cảm ơn bạn đã mua hàng tại\nTech Store',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -52,7 +53,6 @@ class OrderSuccessScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              // Order ID
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -114,7 +114,6 @@ class OrderSuccessScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Buttons
               ElevatedButton(
                 onPressed: () => Navigator.pushNamed(
                   context,
@@ -157,7 +156,7 @@ class OrderSuccessScreen extends StatelessWidget {
     final now = DateTime.now();
     return '${now.day.toString().padLeft(2, '0')}/'
         '${now.month.toString().padLeft(2, '0')}/'
-        '${now.year} – '
+        '${now.year} - '
         '${now.hour.toString().padLeft(2, '0')}:'
         '${now.minute.toString().padLeft(2, '0')}';
   }

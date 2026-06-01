@@ -1,17 +1,19 @@
+// quản lý đường dẫn màn hình
 import 'package:flutter/material.dart';
-import '../screens/home_screen.dart';
-import '../screens/product_list_screen.dart';
-import '../screens/product_detail_screen.dart';
-import '../screens/cart_screen.dart';
-import '../screens/checkout_screen.dart';
-import '../screens/payment_method_screen.dart';
-import '../screens/order_confirm_screen.dart';
-import '../screens/order_success_screen.dart';
-import '../screens/order_history_screen.dart';
-import '../screens/order_detail_screen.dart';
-import '../screens/search_screen.dart';
+import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/cart_screen.dart';
+import '../screens/checkout_screen.dart';
+import '../screens/home_screen.dart';
+import '../screens/order_confirm_screen.dart';
+import '../screens/order_detail_screen.dart';
+import '../screens/order_history_screen.dart';
+import '../screens/order_success_screen.dart';
+import '../screens/payment_method_screen.dart';
+import '../screens/product_detail_screen.dart';
+import '../screens/product_list_screen.dart';
+import '../screens/search_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -27,25 +29,30 @@ class AppRoutes {
   static const String search = '/search';
   static const String login = '/login';
   static const String register = '/register';
+  static const String admin = '/admin';
 
   static Map<String, WidgetBuilder> get routes => {
         home: (_) => const HomeScreen(),
         productList: (ctx) => ProductListScreen(
-            category:
-                ModalRoute.of(ctx)!.settings.arguments as String? ?? 'Tất cả'),
+              categoryId: ModalRoute.of(ctx)!.settings.arguments as String?,
+            ),
         productDetail: (ctx) => ProductDetailScreen(
-            productId: ModalRoute.of(ctx)!.settings.arguments as String),
+              productId: ModalRoute.of(ctx)!.settings.arguments as String,
+            ),
         cart: (_) => const CartScreen(),
         checkout: (_) => const CheckoutScreen(),
         paymentMethod: (_) => const PaymentMethodScreen(),
         orderConfirm: (_) => const OrderConfirmScreen(),
         orderSuccess: (ctx) => OrderSuccessScreen(
-            orderId: ModalRoute.of(ctx)!.settings.arguments as String),
+              orderId: ModalRoute.of(ctx)!.settings.arguments as String,
+            ),
         orderHistory: (_) => const OrderHistoryScreen(),
         orderDetail: (ctx) => OrderDetailScreen(
-            orderId: ModalRoute.of(ctx)!.settings.arguments as String),
+              orderId: ModalRoute.of(ctx)!.settings.arguments as String,
+            ),
         search: (_) => const SearchScreen(),
         login: (_) => const LoginScreen(),
         register: (_) => const RegisterScreen(),
+        admin: (_) => const AdminDashboardScreen(),
       };
 }

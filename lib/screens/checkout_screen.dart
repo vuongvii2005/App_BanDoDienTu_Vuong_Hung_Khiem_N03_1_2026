@@ -1,28 +1,88 @@
 import 'package:flutter/material.dart';
-import '../config/app_theme.dart';
+import 'package:provider/provider.dart';
+
 import '../config/app_routes.dart';
+import '../config/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/cart_provider.dart';
 import '../utils/validators.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
+
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController(text: 'Vương Hùng Khiêm');
-  final _phoneCtrl = TextEditingController(text: '0901 234 567');
-  final _emailCtrl = TextEditingController(text: 'khiemvuong2005@gmail.com');
-  final _addressCtrl = TextEditingController(
-    text: '123 Nguyễn Văn Cừ, Phường 1',
-  );
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  String _district = 'Quận 5';
+  String _district = 'Quận 1';
   String _city = 'TP. Hồ Chí Minh';
+  bool _filledFromUser = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_filledFromUser) return;
+
+    final user = context.read<AuthProvider>().userModel;
+    if (user != null) {
+      _nameCtrl.text = user.fullName;
+      _phoneCtrl.text = user.phone;
+      _emailCtrl.text = user.email;
+      _addressCtrl.text = user.address;
+      _filledFromUser = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
+    _addressCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final cart = context.watch<CartProvider>();
+
+    if (auth.isGuest) {
+      return _messageScaffold(
+        title: 'Thông tin giao hàng',
+        message: 'Cần đăng nhập để thanh toán',
+        button: 'Đăng nhập',
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+      );
+    }
+
+    if (!auth.canBuy) {
+      return _messageScaffold(
+        title: 'Thông tin giao hàng',
+        message: 'Tài khoản này không dùng để mua hàng',
+        button: 'Về trang chủ',
+        onPressed: () =>
+            Navigator.pushReplacementNamed(context, AppRoutes.home),
+      );
+    }
+
+    if (cart.items.isEmpty) {
+      return _messageScaffold(
+        title: 'Thông tin giao hàng',
+        message: 'Giỏ hàng đang trống',
+        button: 'Quay lại',
+        onPressed: () => Navigator.pop(context),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Thông tin giao hàng')),
@@ -51,25 +111,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(height: 14),
                 _field('Địa chỉ', _addressCtrl, validator: Validators.required),
                 const SizedBox(height: 14),
-                // District / City
                 Row(
                   children: [
                     Expanded(
-                      child: _dropdown('Quận/Huyện', _district, [
-                        'Quận 1',
-                        'Quận 3',
-                        'Quận 5',
-                        'Quận 7',
-                        'Quận 10',
-                      ], (v) => setState(() => _district = v!)),
+                      child: _dropdown(
+                          'Quận/Huyện',
+                          _district,
+                          [
+                            'Quận 1',
+                            'Quận 3',
+                            'Quận 5',
+                            'Quận 7',
+                            'Quận 10',
+                          ],
+                          (v) => setState(() => _district = v!)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _dropdown('Tỉnh/Thành phố', _city, [
-                        'TP. Hồ Chí Minh',
-                        'Hà Nội',
-                        'Đà Nẵng',
-                      ], (v) => setState(() => _city = v!)),
+                      child: _dropdown(
+                          'Tỉnh/Thành phố',
+                          _city,
+                          [
+                            'TP. Hồ Chí Minh',
+                            'Hà Nội',
+                            'Đà Nẵng',
+                          ],
+                          (v) => setState(() => _city = v!)),
                     ),
                   ],
                 ),
@@ -90,6 +157,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Widget _messageScaffold({
+    required String title,
+    required String message,
+    required String button,
+    required VoidCallback onPressed,
+  }) {
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, color: AppTheme.grey),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(onPressed: onPressed, child: Text(button)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCard(List<Widget> children) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -106,7 +202,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Widget _field(
     String label,
-    TextEditingController ctrl, {
+    TextEditingController controller, {
     TextInputType? keyboard,
     String? hint,
     int maxLines = 1,
@@ -125,7 +221,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 6),
         TextFormField(
-          controller: ctrl,
+          controller: controller,
           keyboardType: keyboard,
           maxLines: maxLines,
           validator: validator,
@@ -160,15 +256,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value,
-          items: items
-              .map(
-                (i) => DropdownMenuItem(
-                  value: i,
-                  child: Text(i, style: const TextStyle(fontSize: 13)),
-                ),
-              )
-              .toList(),
+          initialValue: value,
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item, style: const TextStyle(fontSize: 13)),
+            );
+          }).toList(),
           onChanged: onChanged,
           decoration: const InputDecoration(
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -184,9 +278,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       color: AppTheme.white,
       child: ElevatedButton(
         onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            Navigator.pushNamed(context, AppRoutes.paymentMethod);
-          }
+          if (!_formKey.currentState!.validate()) return;
+
+          Navigator.pushNamed(
+            context,
+            AppRoutes.paymentMethod,
+            arguments: {
+              'fullName': _nameCtrl.text.trim(),
+              'email': _emailCtrl.text.trim(),
+              'phone': _phoneCtrl.text.trim(),
+              'address': '${_addressCtrl.text.trim()}, $_district, $_city',
+              'note': _noteCtrl.text.trim(),
+            },
+          );
         },
         child: const Text('Tiếp tục'),
       ),

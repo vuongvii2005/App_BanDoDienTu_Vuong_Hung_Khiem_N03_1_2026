@@ -1,58 +1,167 @@
-// - đăng nhập
-// - đăng ký
-// - đăng xuất
-// - lấy uid hiện tại
-// - kiểm tra đã login chưa
+// State dang nhap va thong tin nguoi dung.
+import 'dart:async';
 
-// AuthService
-// - xử lý Firebase Auth
-// AuthProvider
-// - giữ trạng thái đăng nhập cho giao diện
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../models/user_model.dart';
+import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  UserModel? _user;
-  bool _loading = false;
+  AuthProvider({AuthService? authService})
+      : _authService = authService ?? AuthService() {
+    _authSubscription = _authService.authStateChanges.listen(_handleAuthState);
+  }
 
-  UserModel? get user => _user;
-  bool get isLoggedIn => _user != null;
-  bool get loading => _loading;
+  final AuthService _authService;
+  StreamSubscription<User?>? _authSubscription;
 
-  // Mock login — thay bằng Firebase sau
+  User? _currentUser;
+  UserModel? _userModel;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  User? get currentUser => _currentUser;
+  UserModel? get userModel => _userModel;
+  UserModel? get user => _userModel;
+  bool get isLoading => _isLoading;
+  bool get loading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  String? get error => _errorMessage;
+  bool get isLoggedIn => _currentUser != null;
+  String get role => _userModel?.role ?? 'guest';
+  bool get isGuest => !isLoggedIn;
+  bool get isUser => _userModel?.isUser ?? false;
+  bool get isAdmin => _userModel?.isAdmin ?? false;
+  bool get canBuy => isUser;
+  bool get canManageShop => isAdmin;
+
   Future<bool> login(String email, String password) async {
-    _loading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(seconds: 1));
-    _user = UserModel(
-      id: 'user_001',
-      name: 'Vương Hùng Khiêm',
-      email: email,
-      phone: '0901 234 567',
-      avatarUrl: 'https://i.pravatar.cc/100',
-      address: '123 Nguyễn Văn Cừ, Phường 1, Quận 5, TP. Hồ Chí Minh',
-    );
-    _loading = false;
-    notifyListeners();
-    return true;
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final credential = await _authService.login(email, password);
+      _currentUser = credential.user ?? _authService.getCurrentUser();
+      await _loadUserModel();
+      return true;
+    } catch (error) {
+      _errorMessage = _authService.errorMessage(error);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  Future<bool> register(String name, String email, String password) async {
-    _loading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(seconds: 1));
-    _user = UserModel(
-      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      email: email,
-    );
-    _loading = false;
-    notifyListeners();
-    return true;
+  Future<bool> register(
+    String fullName,
+    String email,
+    String password, {
+    String phone = '',
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      _userModel = await _authService.register(
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+      _currentUser = _authService.getCurrentUser();
+      return true;
+    } catch (error) {
+      _errorMessage = _authService.errorMessage(error);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  void logout() {
-    _user = null;
+  Future<void> logout() async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.logout();
+      _currentUser = null;
+      _userModel = null;
+    } catch (error) {
+      _errorMessage = _authService.errorMessage(error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> loadCurrentUser() async {
+    _setLoading(true);
+    _currentUser = _authService.getCurrentUser();
+    await _loadUserModel();
+    _setLoading(false);
+  }
+
+  Future<void> reloadUser() => loadCurrentUser();
+
+  Future<bool> resetPassword(String email) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.resetPassword(email);
+      return true;
+    } catch (error) {
+      _errorMessage = _authService.errorMessage(error);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<void> _handleAuthState(User? firebaseUser) async {
+    _currentUser = firebaseUser;
+
+    if (firebaseUser == null) {
+      _userModel = null;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    await _loadUserModel();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> _loadUserModel() async {
+    final user = _currentUser;
+    if (user == null) {
+      _userModel = null;
+      return;
+    }
+
+    try {
+      _userModel = await _authService.getUserModel(user.uid);
+      _errorMessage = null;
+    } catch (error) {
+      _userModel = null;
+      _errorMessage = _authService.errorMessage(error);
+    }
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -1,13 +1,16 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../config/app_theme.dart';
+
 import '../config/app_routes.dart';
+import '../config/app_theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../utils/formatters.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
   @override
   State<CartScreen> createState() => _CartScreenState();
 }
@@ -16,39 +19,113 @@ class _CartScreenState extends State<CartScreen> {
   final _couponCtrl = TextEditingController();
 
   @override
+  void dispose() {
+    _couponCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
+    final uid = auth.currentUser?.uid;
+
+    if (uid != null && auth.canBuy && cart.userId != uid && !cart.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<CartProvider>().loadCart(uid);
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text('Giỏ hàng'),
         actions: [
-          if (cart.items.isNotEmpty)
+          if (uid != null && auth.canBuy && cart.items.isNotEmpty)
             TextButton(
-              onPressed: () => cart.clear(),
+              onPressed: () => cart.clearCart(uid),
               child: const Text(
-                'Sửa',
+                'Xóa',
                 style: TextStyle(color: AppTheme.primary),
               ),
             ),
         ],
       ),
-      body: cart.items.isEmpty
-          ? _buildEmpty()
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: cart.items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _buildCartItem(context, cart, i),
-                  ),
-                ),
-                _buildSummary(context, cart),
-              ],
+      body: uid == null
+          ? _buildNeedLogin()
+          : !auth.canBuy
+              ? _buildRoleBlocked()
+              : cart.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppTheme.primary),
+                    )
+                  : cart.items.isEmpty
+                      ? _buildEmpty()
+                      : Column(
+                          children: [
+                            if (cart.error != null)
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text(
+                                  cart.error!,
+                                  style: const TextStyle(color: AppTheme.error),
+                                ),
+                              ),
+                            Expanded(
+                              child: ListView.separated(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: cart.items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (_, i) =>
+                                    _buildCartItem(context, cart, uid, i),
+                              ),
+                            ),
+                            _buildSummary(context, cart),
+                          ],
+                        ),
+    );
+  }
+
+  Widget _buildNeedLogin() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              size: 72,
+              color: AppTheme.grey,
             ),
+            const SizedBox(height: 16),
+            const Text(
+              'Cần đăng nhập để xem giỏ hàng',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+              child: const Text('Đăng nhập'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleBlocked() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Tài khoản này không dùng để mua hàng',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: AppTheme.grey),
+        ),
+      ),
     );
   }
 
@@ -83,8 +160,14 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildCartItem(BuildContext context, CartProvider cart, int index) {
+  Widget _buildCartItem(
+    BuildContext context,
+    CartProvider cart,
+    String uid,
+    int index,
+  ) {
     final item = cart.items[index];
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -93,7 +176,6 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: Row(
         children: [
-          // Checkbox
           Checkbox(
             value: true,
             activeColor: AppTheme.primary,
@@ -102,11 +184,10 @@ class _CartScreenState extends State<CartScreen> {
             ),
             onChanged: (_) {},
           ),
-          // Image
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: CachedNetworkImage(
-              imageUrl: item.product.imageUrl,
+              imageUrl: item.imageUrl,
               width: 70,
               height: 70,
               fit: BoxFit.cover,
@@ -121,13 +202,12 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.product.name,
+                  item.productName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -135,9 +215,12 @@ class _CartScreenState extends State<CartScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (item.selectedStorage.isNotEmpty)
+                if (item.selectedStorage.isNotEmpty ||
+                    item.selectedColor.isNotEmpty)
                   Text(
-                    item.selectedStorage,
+                    [item.selectedStorage, item.selectedColor]
+                        .where((value) => value.isNotEmpty)
+                        .join(' - '),
                     style: const TextStyle(fontSize: 12, color: AppTheme.grey),
                   ),
                 const SizedBox(height: 8),
@@ -145,19 +228,19 @@ class _CartScreenState extends State<CartScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      Formatters.currency(item.product.price),
+                      Formatters.currency(item.price),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.primary,
                       ),
                     ),
-                    // Quantity controls
                     Row(
                       children: [
-                        _qtyButton(Icons.remove, () {
-                          cart.updateQuantity(item.id, item.quantity - 1);
-                        }),
+                        _qtyButton(
+                          Icons.remove,
+                          () => cart.decreaseQuantity(uid, item.id),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
@@ -168,9 +251,10 @@ class _CartScreenState extends State<CartScreen> {
                             ),
                           ),
                         ),
-                        _qtyButton(Icons.add, () {
-                          cart.updateQuantity(item.id, item.quantity + 1);
-                        }),
+                        _qtyButton(
+                          Icons.add,
+                          () => cart.increaseQuantity(uid, item.id),
+                        ),
                       ],
                     ),
                   ],
@@ -178,14 +262,13 @@ class _CartScreenState extends State<CartScreen> {
               ],
             ),
           ),
-          // Delete
           IconButton(
             icon: const Icon(
               Icons.delete_outline,
               color: AppTheme.grey,
               size: 20,
             ),
-            onPressed: () => cart.removeItem(item.id),
+            onPressed: () => cart.removeItem(uid, item.id),
           ),
         ],
       ),
@@ -222,7 +305,6 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: Column(
         children: [
-          // Coupon
           Row(
             children: [
               Expanded(
@@ -249,7 +331,6 @@ class _CartScreenState extends State<CartScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Price rows
           _priceRow('Tạm tính', Formatters.currency(cart.subtotal)),
           if (cart.discount > 0)
             _priceRow(

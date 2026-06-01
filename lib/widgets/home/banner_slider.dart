@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../config/app_theme.dart';
-import '../../utils/mock_data.dart';
+import '../../database/mock_data.dart';
 
 class BannerSlider extends StatefulWidget {
   const BannerSlider({super.key});
@@ -52,7 +52,7 @@ class _BannerSliderState extends State<BannerSlider> {
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.7),
                           Colors.transparent,
                         ],
                       ),
@@ -78,7 +78,7 @@ class _BannerSliderState extends State<BannerSlider> {
                         Text(
                           banner['subtitle']!,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 13,
                           ),
                         ),

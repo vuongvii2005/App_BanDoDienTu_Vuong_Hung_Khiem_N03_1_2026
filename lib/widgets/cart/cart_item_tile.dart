@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 import '../../models/cart_item_model.dart';
 import '../../utils/formatters.dart';
@@ -29,18 +30,18 @@ class CartItemTile extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: CachedNetworkImage(
-              imageUrl: item.product.imageUrl,
+              imageUrl: item.imageUrl,
               width: 72,
               height: 72,
               fit: BoxFit.cover,
               placeholder: (_, __) =>
                   Container(width: 72, height: 72, color: AppTheme.greyLight),
               errorWidget: (_, __, ___) => Container(
-                  width: 72,
-                  height: 72,
-                  color: AppTheme.greyLight,
-                  child:
-                      const Icon(Icons.image_outlined, color: AppTheme.grey)),
+                width: 72,
+                height: 72,
+                color: AppTheme.greyLight,
+                child: const Icon(Icons.image_outlined, color: AppTheme.grey),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -48,36 +49,52 @@ class CartItemTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(
+                  item.productName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (item.selectedStorage.isNotEmpty)
-                  Text(item.selectedStorage,
-                      style:
-                          const TextStyle(fontSize: 12, color: AppTheme.grey)),
+                  Text(
+                    item.selectedStorage,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.grey),
+                  ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(Formatters.currency(item.product.price),
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primary)),
+                    Text(
+                      Formatters.currency(item.price),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary,
+                      ),
+                    ),
                     Row(
                       children: [
-                        _qtyBtn(Icons.remove,
-                            () => onQuantityChanged(item.quantity - 1)),
+                        _qtyBtn(
+                          Icons.remove,
+                          () => onQuantityChanged(item.quantity - 1),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('${item.quantity}',
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                          child: Text(
+                            '${item.quantity}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                        _qtyBtn(Icons.add,
-                            () => onQuantityChanged(item.quantity + 1)),
+                        _qtyBtn(
+                          Icons.add,
+                          () => onQuantityChanged(item.quantity + 1),
+                        ),
                       ],
                     ),
                   ],
@@ -86,8 +103,11 @@ class CartItemTile extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline,
-                color: AppTheme.grey, size: 20),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: AppTheme.grey,
+              size: 20,
+            ),
             onPressed: onRemove,
           ),
         ],

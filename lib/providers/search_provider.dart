@@ -1,27 +1,31 @@
+//state tìm kiếm
 import 'package:flutter/material.dart';
+
 import '../models/product_model.dart';
-import '../utils/mock_data.dart';
 
 class SearchProvider extends ChangeNotifier {
   String _query = '';
-  List<String> _history = [];
+  final List<String> _history = <String>[];
 
   String get query => _query;
-  List<String> get history => _history;
+  List<String> get history => List.unmodifiable(_history);
 
-  List<Product> get results {
-    if (_query.trim().isEmpty) return [];
-    return MockData.products
-        .where((p) =>
-            p.name.toLowerCase().contains(_query.toLowerCase()) ||
-            p.category.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
+  List<Product> resultsFrom(List<Product> products) {
+    final normalized = _query.trim().toLowerCase();
+    if (normalized.isEmpty) return <Product>[];
+
+    return products.where((product) {
+      return product.name.toLowerCase().contains(normalized) ||
+          product.brand.toLowerCase().contains(normalized) ||
+          product.description.toLowerCase().contains(normalized);
+    }).toList();
   }
 
-  void search(String q) {
-    _query = q;
-    if (q.trim().isNotEmpty && !_history.contains(q)) {
-      _history.insert(0, q);
+  void search(String query) {
+    _query = query;
+    final trimmed = query.trim();
+    if (trimmed.isNotEmpty && !_history.contains(trimmed)) {
+      _history.insert(0, trimmed);
       if (_history.length > 10) _history.removeLast();
     }
     notifyListeners();

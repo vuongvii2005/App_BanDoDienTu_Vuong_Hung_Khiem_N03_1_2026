@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../config/app_theme.dart';
 import '../../providers/cart_provider.dart';
 
@@ -22,7 +23,7 @@ class AppBottomNavBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -65,6 +66,7 @@ class AppBottomNavBar extends StatelessWidget {
     String label,
   ) {
     final isActive = currentIndex == index;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => onTap(index),
@@ -94,6 +96,7 @@ class AppBottomNavBar extends StatelessWidget {
 
   Widget _cartItem(BuildContext context, int count) {
     final isActive = currentIndex == 2;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => onTap(2),

@@ -1,16 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../config/app_theme.dart';
+
 import '../config/app_routes.dart';
-import '../providers/product_provider.dart';
+import '../config/app_theme.dart';
+import '../models/product_model.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/category_provider.dart';
+import '../providers/product_provider.dart';
 import '../utils/formatters.dart';
-import '../utils/mock_data.dart';
 
 class ProductListScreen extends StatefulWidget {
-  final String category;
-  const ProductListScreen({super.key, required this.category});
+  final String? categoryId;
+
+  const ProductListScreen({super.key, this.categoryId});
 
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();
@@ -23,7 +27,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductProvider>().setCategory(widget.category);
+      context.read<ProductProvider>().selectCategory(widget.categoryId);
+      context.read<CategoryProvider>().selectCategory(widget.categoryId);
     });
   }
 
@@ -36,13 +41,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProductProvider>();
+    final categories = context.watch<CategoryProvider>();
     final cart = context.watch<CartProvider>();
-    final products = provider.filtered;
+    final products = provider.filteredProducts;
+    final title = _screenTitle(categories, provider.selectedCategoryId);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(widget.category),
+        title: Text(title),
         actions: [
           Stack(
             children: [
@@ -79,7 +86,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
       body: Column(
         children: [
-          // Search + Filter
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
@@ -87,7 +93,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
-                    onChanged: provider.setSearch,
+                    onChanged: provider.setSearchQuery,
                     decoration: const InputDecoration(
                       hintText: 'Tìm sản phẩm...',
                       prefixIcon: Icon(Icons.search, size: 20),
@@ -109,70 +115,116 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ],
             ),
           ),
-
-          // Category chips
-          SizedBox(
-            height: 40,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              children: ['Tất cả', 'iPhone', 'Samsung', 'Xiaomi', 'OPPO'].map((
-                c,
-              ) {
-                final isSelected =
-                    provider.selectedCategory == c ||
-                    (c == 'Tất cả' && provider.selectedCategory == 'Tất cả');
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => provider.setCategory(c),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primary : AppTheme.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primary
-                              : AppTheme.greyLight,
-                        ),
-                      ),
-                      child: Text(
-                        c,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isSelected ? Colors.white : AppTheme.black,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
+          _buildCategoryChips(context, categories, provider),
           const SizedBox(height: 8),
-
-          // Product list
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: products.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _buildProductTile(context, products[i]),
-            ),
-          ),
+          Expanded(child: _buildProductList(provider, products)),
         ],
       ),
     );
   }
 
-  Widget _buildProductTile(BuildContext context, product) {
+  Widget _buildCategoryChips(
+    BuildContext context,
+    CategoryProvider categories,
+    ProductProvider products,
+  ) {
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _chip(
+            label: 'Tất cả',
+            isSelected: products.selectedCategoryId == null,
+            onTap: () {
+              categories.clearSelectedCategory();
+              products.selectCategory(null);
+            },
+          ),
+          ...categories.categories.map((category) {
+            return _chip(
+              label: category.name,
+              isSelected: products.selectedCategoryId == category.id,
+              onTap: () {
+                categories.selectCategory(category.id);
+                products.selectCategory(category.id);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primary : AppTheme.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppTheme.primary : AppTheme.greyLight,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: isSelected ? Colors.white : AppTheme.black,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductList(ProductProvider provider, List<Product> products) {
+    if (provider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primary),
+      );
+    }
+
+    if (provider.error != null) {
+      return Center(
+        child: Text(
+          provider.error!,
+          style: const TextStyle(color: AppTheme.grey),
+        ),
+      );
+    }
+
+    if (products.isEmpty) {
+      return const Center(
+        child: Text(
+          'Không có sản phẩm',
+          style: TextStyle(color: AppTheme.grey),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: products.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _buildProductTile(context, products[i]),
+    );
+  }
+
+  Widget _buildProductTile(BuildContext context, Product product) {
+    final firstStorage =
+        product.storageOptions.isNotEmpty ? product.storageOptions.first : '';
+
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
         context,
@@ -187,7 +239,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ),
         child: Row(
           children: [
-            // Image
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: CachedNetworkImage(
@@ -206,27 +257,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  if (product.storage.isNotEmpty)
+                  if (firstStorage.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      product.storage.first,
+                      firstStorage,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppTheme.grey,
                       ),
                     ),
+                  ],
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -254,20 +307,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          context.read<CartProvider>().addItem(product);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Đã thêm vào giỏ hàng'),
-                              backgroundColor: AppTheme.primary,
-                              duration: const Duration(seconds: 1),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: () => _addToCart(product),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -291,5 +331,56 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _addToCart(Product product) async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isGuest || auth.currentUser == null) {
+      Navigator.pushNamed(context, AppRoutes.login);
+      return;
+    }
+
+    if (!auth.canBuy) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản này không dùng để mua hàng'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final storage =
+        product.storageOptions.isNotEmpty ? product.storageOptions.first : '';
+    final color =
+        product.colorOptions.isNotEmpty ? product.colorOptions.first : '';
+
+    await context.read<CartProvider>().addToCart(
+          auth.currentUser!.uid,
+          product,
+          storage,
+          color,
+        );
+
+    if (!mounted) return;
+    final error = context.read<CartProvider>().error;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'Đã thêm vào giỏ hàng'),
+        backgroundColor: AppTheme.primary,
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  String _screenTitle(CategoryProvider categories, String? categoryId) {
+    if (categoryId == null || categoryId.trim().isEmpty) {
+      return 'Tất cả sản phẩm';
+    }
+
+    final category = categories.getCategoryById(categoryId);
+    return category?.name ?? 'Sản phẩm';
   }
 }

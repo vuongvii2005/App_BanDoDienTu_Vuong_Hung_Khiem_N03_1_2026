@@ -10,6 +10,6 @@ class Formatters {
   }
 
   static String dateTime(DateTime date) {
-    return DateFormat('dd/MM/yyyy – HH:mm').format(date);
+    return DateFormat('dd/MM/yyyy - HH:mm').format(date);
   }
 }
