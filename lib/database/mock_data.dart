@@ -11,8 +11,9 @@ class MockData {
       name: 'iPhone 15 Pro Max',
       brand: 'Apple',
       categoryId: 'phone',
-      price: 1199,
-      oldPrice: 1299,
+      minPrice: 1199,
+      maxPrice: 1599,
+      totalStock: 20,
       rating: 4.8,
       reviewCount: 256,
       imageUrl:
@@ -22,9 +23,6 @@ class MockData {
       ],
       description:
           'Điện thoại cao cấp với hiệu năng mạnh, thiết kế sang trọng và camera 48MP.',
-      storageOptions: ['256GB', '512GB', '1TB'],
-      colorOptions: ['Titan tự nhiên', 'Titan đen', 'Titan trắng'],
-      stock: 20,
       isFeatured: true,
     ),
     Product(
@@ -32,7 +30,9 @@ class MockData {
       name: 'AirPods Pro 2',
       brand: 'Apple',
       categoryId: 'headphone',
-      price: 249,
+      minPrice: 249,
+      maxPrice: 249,
+      totalStock: 30,
       rating: 4.7,
       reviewCount: 189,
       imageUrl:
@@ -41,8 +41,6 @@ class MockData {
         'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MQD83?wid=400&hei=400&fmt=jpeg',
       ],
       description: 'Tai nghe không dây có chống ồn chủ động.',
-      colorOptions: ['Trắng'],
-      stock: 30,
       isFeatured: true,
     ),
     Product(
@@ -50,15 +48,14 @@ class MockData {
       name: 'Samsung Galaxy S24 Ultra',
       brand: 'Samsung',
       categoryId: 'phone',
-      price: 1099,
+      minPrice: 1099,
+      maxPrice: 1499,
+      totalStock: 18,
       rating: 4.6,
       reviewCount: 408,
       imageUrl:
           'https://images.samsung.com/is/image/samsung/p6pim/levant/2401/gallery/levant-galaxy-s24-ultra-s928-sm-s928bzkgmid-thumb-539573050?\$344_344_PNG\$',
       description: 'Điện thoại Android cao cấp với bút S Pen và camera 200MP.',
-      storageOptions: ['256GB', '512GB'],
-      colorOptions: ['Đen', 'Xám', 'Tím'],
-      stock: 18,
       isFeatured: false,
     ),
     Product(
@@ -66,15 +63,14 @@ class MockData {
       name: 'MacBook Pro 14',
       brand: 'Apple',
       categoryId: 'laptop',
-      price: 1999,
+      minPrice: 1999,
+      maxPrice: 2399,
+      totalStock: 10,
       rating: 4.9,
       reviewCount: 203,
       imageUrl:
           'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202301?wid=400&hei=400&fmt=jpeg',
       description: 'Laptop chuyên nghiệp nhỏ gọn dùng chip Apple silicon.',
-      storageOptions: ['512GB', '1TB', '2TB'],
-      colorOptions: ['Xám không gian', 'Bạc'],
-      stock: 10,
       isFeatured: true,
     ),
   ];
@@ -84,7 +80,8 @@ class MockData {
     CategoryModel(id: 'laptop', name: 'Laptop', icon: 'L', sortOrder: 2),
     CategoryModel(id: 'tablet', name: 'Máy tính bảng', icon: 'T', sortOrder: 3),
     CategoryModel(id: 'headphone', name: 'Tai nghe', icon: 'H', sortOrder: 4),
-    CategoryModel(id: 'watch', name: 'Đồng hồ thông minh', icon: 'W', sortOrder: 5),
+    CategoryModel(
+        id: 'watch', name: 'Đồng hồ thông minh', icon: 'W', sortOrder: 5),
     CategoryModel(id: 'accessory', name: 'Phụ kiện', icon: 'A', sortOrder: 6),
   ];
 

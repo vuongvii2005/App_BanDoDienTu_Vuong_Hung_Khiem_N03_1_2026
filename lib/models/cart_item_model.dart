@@ -1,49 +1,56 @@
-//cấu trúc dữ liệu sản phẩm trong giỏ hàng
+// Cau truc du lieu san pham trong gio hang.
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'product_model.dart';
+import 'product_variant_model.dart';
 
 class CartItem {
   final String id;
   final String productId;
+  final String variantId;
   final String productName;
   final String imageUrl;
+  final String storage;
+  final String color;
   final double price;
   final int quantity;
-  final String selectedStorage;
-  final String selectedColor;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   const CartItem({
     required this.id,
     required this.productId,
+    required this.variantId,
     required this.productName,
     required this.imageUrl,
+    this.storage = '',
+    this.color = '',
     required this.price,
     this.quantity = 1,
-    this.selectedStorage = '',
-    this.selectedColor = '',
     this.createdAt,
     this.updatedAt,
   });
 
-  factory CartItem.fromProduct(
-    Product product, {
+  String get selectedStorage => storage;
+  String get selectedColor => color;
+
+  factory CartItem.fromProductVariant(
+    Product product,
+    ProductVariant variant, {
     String id = '',
     int quantity = 1,
-    String selectedStorage = '',
-    String selectedColor = '',
   }) {
     return CartItem(
       id: id,
       productId: product.id,
+      variantId: variant.id,
       productName: product.name,
-      imageUrl: product.imageUrl,
-      price: product.price,
+      imageUrl:
+          variant.imageUrl.isNotEmpty ? variant.imageUrl : product.imageUrl,
+      storage: variant.storage,
+      color: variant.color,
+      price: variant.price,
       quantity: quantity,
-      selectedStorage: selectedStorage,
-      selectedColor: selectedColor,
     );
   }
 
@@ -57,12 +64,13 @@ class CartItem {
     return CartItem(
       id: id ?? _string(map['id']),
       productId: _string(map['productId']),
+      variantId: _string(map['variantId']),
       productName: _string(map['productName']),
       imageUrl: _string(map['imageUrl']),
+      storage: _string(map['storage'] ?? map['selectedStorage']),
+      color: _string(map['color'] ?? map['selectedColor']),
       price: _double(map['price']),
       quantity: _int(map['quantity'], fallback: 1),
-      selectedStorage: _string(map['selectedStorage']),
-      selectedColor: _string(map['selectedColor']),
       createdAt: _date(map['createdAt']),
       updatedAt: _date(map['updatedAt']),
     );
@@ -73,12 +81,13 @@ class CartItem {
   Map<String, dynamic> toMap() => {
         'id': id,
         'productId': productId,
+        'variantId': variantId,
         'productName': productName,
         'imageUrl': imageUrl,
+        'storage': storage,
+        'color': color,
         'price': price,
         'quantity': quantity,
-        'selectedStorage': selectedStorage,
-        'selectedColor': selectedColor,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
       };
@@ -92,12 +101,13 @@ class CartItem {
     return CartItem(
       id: id ?? this.id,
       productId: productId,
+      variantId: variantId,
       productName: productName,
       imageUrl: imageUrl,
+      storage: storage,
+      color: color,
       price: price,
       quantity: quantity ?? this.quantity,
-      selectedStorage: selectedStorage,
-      selectedColor: selectedColor,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

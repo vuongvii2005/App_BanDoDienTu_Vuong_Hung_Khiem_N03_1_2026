@@ -222,8 +222,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildProductTile(BuildContext context, Product product) {
-    final firstStorage =
-        product.storageOptions.isNotEmpty ? product.storageOptions.first : '';
+    final isInCart = context.watch<CartProvider>().items.any(
+          (item) => item.productId == product.id,
+        );
 
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
@@ -245,7 +246,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 imageUrl: product.imageUrl,
                 width: 90,
                 height: 90,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 placeholder: (_, __) =>
                     Container(width: 90, height: 90, color: AppTheme.greyLight),
                 errorWidget: (_, __, ___) => Container(
@@ -270,16 +271,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (firstStorage.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      firstStorage,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.grey,
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.totalStock > 0
+                        ? 'Còn ${product.totalStock} sản phẩm'
+                        : 'Hết hàng',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.grey,
                     ),
-                  ],
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -299,25 +300,32 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        Formatters.currency(product.price),
+                        _priceText(product),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.black,
+                          color: AppTheme.primary,
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _addToCart(product),
+                        onTap: () => _goChooseVariant(product),
                         child: Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppTheme.primary,
+                            color: isInCart
+                                ? AppTheme.primary.withValues(alpha: 0.1)
+                                : AppTheme.primary,
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isInCart
+                                  ? AppTheme.primary
+                                  : AppTheme.primary,
+                            ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.add_shopping_cart,
-                            color: Colors.white,
+                            color: isInCart ? AppTheme.primary : AppTheme.white,
                             size: 18,
                           ),
                         ),
@@ -333,7 +341,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Future<void> _addToCart(Product product) async {
+  void _goChooseVariant(Product product) {
     final auth = context.read<AuthProvider>();
     if (auth.isGuest || auth.currentUser == null) {
       Navigator.pushNamed(context, AppRoutes.login);
@@ -350,29 +358,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
       return;
     }
 
-    final storage =
-        product.storageOptions.isNotEmpty ? product.storageOptions.first : '';
-    final color =
-        product.colorOptions.isNotEmpty ? product.colorOptions.first : '';
-
-    await context.read<CartProvider>().addToCart(
-          auth.currentUser!.uid,
-          product,
-          storage,
-          color,
-        );
-
-    if (!mounted) return;
-    final error = context.read<CartProvider>().error;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error ?? 'Đã thêm vào giỏ hàng'),
-        backgroundColor: AppTheme.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+    Navigator.pushNamed(
+      context,
+      AppRoutes.productDetail,
+      arguments: product.id,
     );
+  }
+
+  String _priceText(Product product) {
+    return Formatters.currency(product.minPrice);
   }
 
   String _screenTitle(CategoryProvider categories, String? categoryId) {

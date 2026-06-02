@@ -16,9 +16,33 @@ Future<void> seedFirestoreData() async {
   for (final product in _products) {
     final docRef =
         firestore.collection('products').doc(product['id'] as String);
-    productBatch.set(docRef, product, SetOptions(merge: true));
+    final productDoc = Map<String, dynamic>.from(product)..remove('_variants');
+    productDoc.addAll({
+      'price': FieldValue.delete(),
+      'oldPrice': FieldValue.delete(),
+      'stock': FieldValue.delete(),
+      'storageOptions': FieldValue.delete(),
+      'colorOptions': FieldValue.delete(),
+    });
+    productBatch.set(docRef, productDoc, SetOptions(merge: true));
   }
   await productBatch.commit();
+
+  final variantBatch = firestore.batch();
+  for (final product in _products) {
+    final productId = product['id'] as String;
+    final variants =
+        (product['_variants'] as List).cast<Map<String, dynamic>>();
+    for (final variant in variants) {
+      final docRef = firestore
+          .collection('products')
+          .doc(productId)
+          .collection('variants')
+          .doc(variant['id'] as String);
+      variantBatch.set(docRef, variant, SetOptions(merge: true));
+    }
+  }
+  await variantBatch.commit();
 }
 
 final _now = FieldValue.serverTimestamp();
@@ -686,25 +710,100 @@ Map<String, dynamic> _product({
         'https://picsum.photos/seed/$id/800/800',
       ];
   final imageUrl = imageUrls.first;
+  final variants = _buildVariants(
+    productId: id,
+    basePrice: price,
+    oldPrice: oldPrice,
+    totalStock: stock,
+    storageOptions: storageOptions,
+    colorOptions: colorOptions,
+    imageUrls: imageUrls,
+  );
+  final prices = variants.map((variant) => variant['price'] as double).toList();
+  final totalStock = variants.fold<int>(
+    0,
+    (total, variant) => total + (variant['stock'] as int),
+  );
 
   return {
     'id': id,
     'name': name,
     'brand': brand,
     'categoryId': categoryId,
-    'price': price,
-    'oldPrice': oldPrice,
     'description': description,
     'imageUrl': imageUrl,
     'images': imageUrls,
-    'storageOptions': storageOptions,
-    'colorOptions': colorOptions,
-    'stock': stock,
+    'minPrice': prices.reduce((a, b) => a < b ? a : b),
+    'maxPrice': prices.reduce((a, b) => a > b ? a : b),
+    'totalStock': totalStock,
     'rating': rating,
     'reviewCount': reviewCount,
     'isFeatured': isFeatured,
     'isActive': true,
     'createdAt': _now,
     'updatedAt': _now,
+    '_variants': variants,
   };
+}
+
+List<Map<String, dynamic>> _buildVariants({
+  required String productId,
+  required double basePrice,
+  required double oldPrice,
+  required int totalStock,
+  required List<String> storageOptions,
+  required List<String> colorOptions,
+  required List<String> imageUrls,
+}) {
+  final storages = storageOptions.isEmpty ? ['Mặc định'] : storageOptions;
+  final colors = colorOptions.isEmpty ? ['Mặc định'] : colorOptions;
+  final combinations = <Map<String, String>>[];
+
+  for (final storage in storages.take(4)) {
+    combinations.add({'storage': storage, 'color': colors.first});
+  }
+
+  for (final color in colors.skip(1)) {
+    if (combinations.length >= 4) break;
+    combinations.add({'storage': storages.first, 'color': color});
+  }
+
+  final stockPerVariant =
+      (totalStock / combinations.length).ceil().clamp(1, totalStock).toInt();
+  final priceStep = _priceStep(basePrice);
+
+  return combinations.asMap().entries.map((entry) {
+    final index = entry.key;
+    final combination = entry.value;
+    final storage = combination['storage'] ?? 'Mặc định';
+    final color = combination['color'] ?? 'Mặc định';
+    final priceLevel = index < storages.length ? index : 0;
+    final variantPrice = basePrice + priceLevel * priceStep;
+    final variantOldPrice =
+        oldPrice > 0 ? oldPrice + priceLevel * priceStep : 0.0;
+
+    return {
+      'id': 'v${index + 1}',
+      'productId': productId,
+      'storage': storage,
+      'color': color,
+      'price': variantPrice,
+      'oldPrice': variantOldPrice,
+      'stock': index == combinations.length - 1
+          ? (totalStock - stockPerVariant * index).clamp(1, totalStock)
+          : stockPerVariant,
+      'sku': '${productId.toUpperCase()}-V${index + 1}',
+      'imageUrl': imageUrls[index % imageUrls.length],
+      'isActive': true,
+      'createdAt': _now,
+      'updatedAt': _now,
+    };
+  }).toList();
+}
+
+double _priceStep(double price) {
+  if (price >= 1000) return 200;
+  if (price >= 500) return 100;
+  if (price >= 100) return 30;
+  return 5;
 }
