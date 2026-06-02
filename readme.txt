@@ -190,3 +190,7 @@ Review mới là file note( để vương viết cấm động vào)
 Sản phẩm yêu thích chưa có
 Mã giảm giá / voucher chưa thật (nên viết mã giảm giá sớm để thiết kế nhiều thứ khác)
 Thanh toán chưa thực tế(có thể làm sau)
+
+//====================================================
+
+cải thiện chuẩn giao diện chính sao  cho chuyên nghiệp nhất và các hiệu ứng tương tác mượt nhất

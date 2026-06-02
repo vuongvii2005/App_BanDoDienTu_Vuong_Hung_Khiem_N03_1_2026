@@ -46,8 +46,7 @@ class OrderProvider extends ChangeNotifier {
     required double shippingFee,
     required double total,
     required String paymentMethod,
-    required String shippingAddress,
-    required String phone,
+    required Map<String, String> shippingInfo,
   }) async {
     if (userId.trim().isEmpty) {
       _error = 'Cần đăng nhập để đặt hàng';
@@ -66,6 +65,13 @@ class OrderProvider extends ChangeNotifier {
 
     try {
       final orderId = 'TS${DateTime.now().millisecondsSinceEpoch}';
+      
+      // Build full address from shipping info
+      final city = shippingInfo['city'] ?? '';
+      final district = shippingInfo['district'] ?? '';
+      final address = shippingInfo['address'] ?? '';
+      final shippingAddress = '$address, $district, $city'.replaceAll(RegExp(r', +'), ', ').replaceAll(RegExp(r'^, |, $'), '');
+      
       final order = OrderModel(
         id: orderId,
         userId: userId,
@@ -76,7 +82,7 @@ class OrderProvider extends ChangeNotifier {
         total: total,
         paymentMethod: paymentMethod,
         shippingAddress: shippingAddress,
-        phone: phone,
+        phone: shippingInfo['phone'] ?? '',
         status: OrderStatus.pending,
         createdAt: DateTime.now(),
       );
