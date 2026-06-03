@@ -24,7 +24,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _district = 'Quận 1';
   String _city = 'TP. Hồ Chí Minh';
   bool _filledFromUser = false;
-
+  static const Map<String, List<String>> _districtsByCity = {
+    'TP. Hồ Chí Minh': [
+      'Quận 1',
+      'Quận 3',
+      'Quận 5',
+      'Quận 7',
+      'Quận 10',
+    ],
+    'Hà Nội': [
+      'Ba Đình',
+      'Hoàn Kiếm',
+      'Đống Đa',
+      'Hai Bà Trưng',
+      'Cầu Giấy',
+    ],
+    'Đà Nẵng': [
+      'Hải Châu',
+      'Thanh Khê',
+      'Sơn Trà',
+      'Ngũ Hành Sơn',
+      'Liên Chiểu',
+    ],
+  };
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -82,7 +104,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         onPressed: () => Navigator.pop(context),
       );
     }
-
+    final districtOptions = _districtsByCity[_city] ?? const <String>[];
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Thông tin giao hàng')),
@@ -114,16 +136,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _dropdown(
-                          'Quận/Huyện',
-                          _district,
-                          [
-                            'Quận 1',
-                            'Quận 3',
-                            'Quận 5',
-                            'Quận 7',
-                            'Quận 10',
-                          ],
+                      child: _dropdown('Quận/Huyện', _district, districtOptions,
                           (v) => setState(() => _district = v!)),
                     ),
                     const SizedBox(width: 10),
@@ -136,7 +149,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             'Hà Nội',
                             'Đà Nẵng',
                           ],
-                          (v) => setState(() => _city = v!)),
+                          (v) => setState(() {
+                                _city = v!;
+                                _district = _districtsByCity[_city]!.first;
+                              })),
                     ),
                   ],
                 ),
