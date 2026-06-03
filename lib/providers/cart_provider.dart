@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../models/cart_item_model.dart';
 import '../models/product_model.dart';
+import '../models/product_variant_model.dart';
 import '../services/cart_service.dart';
 
 class CartProvider extends ChangeNotifier {
@@ -48,19 +49,17 @@ class CartProvider extends ChangeNotifier {
   Future<void> addToCart(
     String userId,
     Product product,
-    String selectedStorage,
-    String selectedColor, {
+    ProductVariant variant, {
     int quantity = 1,
   }) async {
     _userId = userId;
     _error = null;
 
     try {
-      final item = CartItem.fromProduct(
+      final item = CartItem.fromProductVariant(
         product,
+        variant,
         quantity: quantity,
-        selectedStorage: selectedStorage,
-        selectedColor: selectedColor,
       );
       await _cartService.addItem(userId, item);
       _items = await _cartService.getCartItems(userId);

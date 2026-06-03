@@ -19,7 +19,8 @@ class CartService {
     final snapshot = await _items(userId).get();
     final items = snapshot.docs.map(CartItem.fromFirestore).toList();
     items.sort((first, second) {
-      final firstDate = first.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final firstDate =
+          first.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       final secondDate =
           second.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return firstDate.compareTo(secondDate);
@@ -34,9 +35,8 @@ class CartService {
     CartItem? existing;
     for (final cartItem in currentItems) {
       final sameProduct = cartItem.productId == item.productId;
-      final sameStorage = cartItem.selectedStorage == item.selectedStorage;
-      final sameColor = cartItem.selectedColor == item.selectedColor;
-      if (sameProduct && sameStorage && sameColor) {
+      final sameVariant = cartItem.variantId == item.variantId;
+      if (sameProduct && sameVariant) {
         existing = cartItem;
         break;
       }

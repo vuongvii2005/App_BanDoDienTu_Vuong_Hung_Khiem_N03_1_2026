@@ -8,55 +8,63 @@ enum OrderStatus { pending, confirmed, shipping, completed, cancelled }
 
 class OrderItem {
   final String productId;
+  final String variantId;
   final String productName;
   final String imageUrl;
+  final String storage;
+  final String color;
   final double price;
   final int quantity;
-  final String selectedStorage;
-  final String selectedColor;
 
   const OrderItem({
     required this.productId,
+    required this.variantId,
     required this.productName,
     required this.imageUrl,
+    this.storage = '',
+    this.color = '',
     required this.price,
     required this.quantity,
-    this.selectedStorage = '',
-    this.selectedColor = '',
   });
+
+  String get selectedStorage => storage;
+  String get selectedColor => color;
 
   factory OrderItem.fromCartItem(CartItem item) {
     return OrderItem(
       productId: item.productId,
+      variantId: item.variantId,
       productName: item.productName,
       imageUrl: item.imageUrl,
+      storage: item.storage,
+      color: item.color,
       price: item.price,
       quantity: item.quantity,
-      selectedStorage: item.selectedStorage,
-      selectedColor: item.selectedColor,
     );
   }
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
     return OrderItem(
       productId: _string(map['productId']),
+      variantId: _string(map['variantId']),
       productName: _string(map['productName']),
       imageUrl: _string(map['imageUrl']),
+      storage: _string(map['storage'] ?? map['selectedStorage']),
+      color: _string(map['color'] ?? map['selectedColor']),
       price: _double(map['price']),
       quantity: _int(map['quantity'], fallback: 1),
-      selectedStorage: _string(map['selectedStorage']),
-      selectedColor: _string(map['selectedColor']),
     );
   }
 
   Map<String, dynamic> toMap() => {
         'productId': productId,
+        'variantId': variantId,
         'productName': productName,
         'imageUrl': imageUrl,
+        'storage': storage,
+        'color': color,
         'price': price,
         'quantity': quantity,
-        'selectedStorage': selectedStorage,
-        'selectedColor': selectedColor,
       };
 }
 

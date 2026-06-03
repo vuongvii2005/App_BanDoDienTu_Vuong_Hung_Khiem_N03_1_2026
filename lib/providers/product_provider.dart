@@ -1,7 +1,8 @@
-//state sản phẩm 
+//state sản phẩm
 import 'package:flutter/material.dart';
 
 import '../models/product_model.dart';
+import '../models/product_variant_model.dart';
 import '../services/product_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -17,12 +18,17 @@ class ProductProvider extends ChangeNotifier {
   String? _error;
   String? _selectedCategoryId;
   String _searchQuery = '';
+  final Map<String, List<ProductVariant>> _variantsByProductId =
+      <String, List<ProductVariant>>{};
+  final Set<String> _loadingVariantProductIds = <String>{};
+  String? _variantError;
 
   List<Product> get products => List.unmodifiable(_products);
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get selectedCategoryId => _selectedCategoryId;
   String get searchQuery => _searchQuery;
+  String? get variantError => _variantError;
 
   List<Product> get featuredProducts =>
       _products.where((product) => product.isFeatured).toList();
@@ -64,6 +70,43 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() => loadProducts();
+
+  List<ProductVariant> getVariants(String productId) {
+    return List.unmodifiable(
+      _variantsByProductId[productId] ?? <ProductVariant>[],
+    );
+  }
+
+  bool isLoadingVariants(String productId) {
+    return _loadingVariantProductIds.contains(productId);
+  }
+
+  Future<List<ProductVariant>> loadVariants(
+    String productId, {
+    bool force = false,
+  }) async {
+    if (productId.trim().isEmpty) return <ProductVariant>[];
+    if (!force && _variantsByProductId.containsKey(productId)) {
+      return getVariants(productId);
+    }
+
+    _loadingVariantProductIds.add(productId);
+    _variantError = null;
+    notifyListeners();
+
+    try {
+      final variants = await _productService.getVariantsByProduct(productId);
+      _variantsByProductId[productId] = variants;
+      return variants;
+    } catch (error) {
+      _variantError = 'Không tải được biến thể sản phẩm';
+      _variantsByProductId[productId] = <ProductVariant>[];
+      return <ProductVariant>[];
+    } finally {
+      _loadingVariantProductIds.remove(productId);
+      notifyListeners();
+    }
+  }
 
   void selectCategory(String? categoryId) {
     _selectedCategoryId = _isAllCategory(categoryId) ? null : categoryId;

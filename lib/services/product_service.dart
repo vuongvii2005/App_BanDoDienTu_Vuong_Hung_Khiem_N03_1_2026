@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/product_model.dart';
+import '../models/product_variant_model.dart';
 
 class ProductService {
   ProductService({FirebaseFirestore? firestore})
@@ -11,6 +12,9 @@ class ProductService {
 
   CollectionReference<Map<String, dynamic>> get _products =>
       _firestore.collection('products');
+
+  CollectionReference<Map<String, dynamic>> _variants(String productId) =>
+      _products.doc(productId).collection('variants');
 
   Future<List<Product>> getAllProducts() async {
     final snapshot = await _products.where('isActive', isEqualTo: true).get();
@@ -41,6 +45,37 @@ class ProductService {
     return product.isActive ? product : null;
   }
 
+  Future<List<ProductVariant>> getVariantsByProduct(String productId) async {
+    if (productId.trim().isEmpty) return <ProductVariant>[];
+
+    final snapshot =
+        await _variants(productId).where('isActive', isEqualTo: true).get();
+    final variants = snapshot.docs
+        .map((doc) => ProductVariant.fromFirestore(doc, productId: productId))
+        .toList();
+
+    variants.sort((first, second) {
+      final byStorage = first.storage.compareTo(second.storage);
+      if (byStorage != 0) return byStorage;
+      return first.color.compareTo(second.color);
+    });
+
+    return variants;
+  }
+
+  Future<ProductVariant?> getVariantById(
+    String productId,
+    String variantId,
+  ) async {
+    if (productId.trim().isEmpty || variantId.trim().isEmpty) return null;
+
+    final doc = await _variants(productId).doc(variantId).get();
+    if (!doc.exists) return null;
+
+    final variant = ProductVariant.fromFirestore(doc, productId: productId);
+    return variant.isActive ? variant : null;
+  }
+
   Future<List<Product>> searchProducts(String keyword) async {
     final query = keyword.trim().toLowerCase();
     final products = await getAllProducts();
@@ -56,7 +91,8 @@ class ProductService {
 
   Future<String> addProduct(Product product) async {
     final productId = product.id.trim();
-    final docRef = productId.isEmpty ? _products.doc() : _products.doc(productId);
+    final docRef =
+        productId.isEmpty ? _products.doc() : _products.doc(productId);
 
     await docRef.set({
       ...product.toMap(),

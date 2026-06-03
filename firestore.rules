@@ -36,6 +36,12 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if resource.data.isActive == true || isAdmin();
       allow create, update, delete: if isAdmin();
+
+      match /variants/{variantId} {
+        allow read: if isAdmin()
+          || get(/databases/$(database)/documents/products/$(productId)).data.isActive == true;
+        allow create, update, delete: if isAdmin();
+      }
     }
 
     match /users/{uid} {
