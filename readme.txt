@@ -194,3 +194,5 @@ Thanh toán chưa thực tế(có thể làm sau)
 //====================================================
 
 cải thiện chuẩn giao diện chính sao  cho chuyên nghiệp nhất và các hiệu ứng tương tác mượt nhất
+
+cập nhật tiếp phần giao diện chính , giao diện xác nhận đơn hàng.
