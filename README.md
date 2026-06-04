@@ -204,3 +204,97 @@ lib/                              # Source code chính của ứng dụng Flutte
 
 
 Cấu trúc thư mục đã hoàn chỉnh và phát triển tiếp các phần tiếp theo
+
+App_BanDoDienTu_Vuong_Hung_Khiem_N03_1_2026/
+│
+├── 📄 Tệp Cấu Hình Root
+│   ├── pubspec.yaml              # Cấu hình dependencies & assets
+│   ├── analysis_options.yaml      # Cấu hình linting
+│   ├── firebase.json             # Cấu hình Firebase
+│   ├── README.md
+│   └── readme
+│
+├── 📁 lib/                        # Source code chính
+│   ├── 📄 main.dart              # Entry point (điểm khởi động)
+│   ├── 📄 firebase_options.dart  # Cấu hình Firebase options
+│   │
+│   ├── 📁 models/                # Data models (6 files)
+│   │   ├── user_model.dart
+│   │   ├── product_model.dart
+│   │   ├── category_model.dart
+│   │   ├── cart_model.dart
+│   │   ├── order_model.dart
+│   │   └── review_model.dart
+│   │
+│   ├── 📁 providers/             # State management (6 files)
+│   │   ├── auth_provider.dart
+│   │   ├── user_provider.dart
+│   │   ├── product_provider.dart
+│   │   ├── category_provider.dart
+│   │   ├── cart_provider.dart
+│   │   └── order_provider.dart
+│   │
+│   ├── 📁 services/              # Firebase & API services (7 files)
+│   │   ├── auth_service.dart
+│   │   ├── user_service.dart
+│   │   ├── product_service.dart
+│   │   ├── category_service.dart
+│   │   ├── cart_service.dart
+│   │   ├── order_service.dart
+│   │   └── review_service.dart
+│   │
+│   ├── 📁 screens/               # UI Screens
+│   │   └── home_screen.dart      # Màn hình chính
+│   │
+│   ├── 📁 widgets/               # Reusable components (9 files)
+│   │   ├── product_card.dart     # Thẻ sản phẩm
+│   │   ├── category_item.dart    # Mục danh mục
+│   │   ├── cart_item_tile.dart   # Sản phẩm trong giỏ
+│   │   ├── order_item_tile.dart  # Mục đơn hàng
+│   │   ├── price_text.dart       # Hiển thị giá
+│   │   ├── quantity_selector.dart # Chọn số lượng
+│   │   ├── rating_stars.dart     # Đánh giá sao
+│   │   ├── order_status_badge.dart # Badge trạng thái
+│   │   └── primary_button.dart   # Button chính
+│   │
+│   └── 📁 utils/                 # Utility functions
+│       ├── seed_products.dart    # Dữ liệu mẫu sản phẩm
+│       └── baitap.dart           # Utilities khác
+│
+├── 📁 assets/                    # Tài nguyên ứng dụng
+│   └── 📁 images/                # Ảnh, icon
+│
+├── 📁 android/                   # Code native Android
+│   ├── app/                      # App module
+│   │   └── src/
+│   ├── build.gradle.kts
+│   ├── gradle.properties
+│   ├── local.properties
+│   ├── settings.gradle.kts
+│   └── gradle/                   # Gradle wrapper
+│
+├── 📁 ios/                       # Code native iOS
+│   ├── Runner/                   # Ứng dụng chính
+│   ├── RunnerTests/              # Unit tests
+│   └── Flutter/                  # Cấu hình Flutter
+│
+├── 📁 web/                       # Hỗ trợ web
+│   ├── index.html
+│   ├── manifest.json
+│   └── icons/
+│
+├── 📁 windows/                   # Hỗ trợ Windows desktop
+│
+├── 📁 linux/                     # Hỗ trợ Linux desktop
+│
+├── 📁 macos/                     # Hỗ trợ macOS desktop
+│
+├── 📁 test/                      # Unit & widget tests
+│   └── widget_test.dart
+│
+└── 📁 build/                     # Thư mục build (generated)
+    └── flutter_assets/
+
+
+Cấu trúc thư mục đã hoàn chỉnh và phát triển tiếp các phần tiếp theo
+

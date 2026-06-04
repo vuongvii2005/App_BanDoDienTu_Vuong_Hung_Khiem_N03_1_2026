@@ -132,7 +132,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            Formatters.currency(product.price),
+                            _priceText(product),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -152,5 +152,9 @@ class ProductCard extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _priceText(Product product) {
+    return Formatters.currency(product.minPrice);
   }
 }

@@ -1,4 +1,4 @@
-//cấu trúc dữ liệu sản phẩm
+// Cau truc du lieu chung cua san pham.
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Product {
@@ -6,14 +6,12 @@ class Product {
   final String name;
   final String brand;
   final String categoryId;
-  final double price;
-  final double oldPrice;
   final String description;
   final String imageUrl;
   final List<String> images;
-  final List<String> storageOptions;
-  final List<String> colorOptions;
-  final int stock;
+  final double minPrice;
+  final double maxPrice;
+  final int totalStock;
   final double rating;
   final int reviewCount;
   final bool isFeatured;
@@ -26,14 +24,12 @@ class Product {
     required this.name,
     this.brand = '',
     required this.categoryId,
-    required this.price,
-    this.oldPrice = 0,
     this.description = '',
     required this.imageUrl,
     this.images = const [],
-    this.storageOptions = const [],
-    this.colorOptions = const [],
-    this.stock = 0,
+    this.minPrice = 0,
+    this.maxPrice = 0,
+    this.totalStock = 0,
     this.rating = 0,
     this.reviewCount = 0,
     this.isFeatured = false,
@@ -41,6 +37,14 @@ class Product {
     this.createdAt,
     this.updatedAt,
   });
+
+  // Compatibility getters for old list/card UI while variants are introduced.
+  double get price => minPrice;
+  double get oldPrice => 0;
+  int get stock => totalStock;
+  List<String> get storageOptions => const <String>[];
+  List<String> get colorOptions => const <String>[];
+  bool get hasPriceRange => maxPrice > minPrice;
 
   factory Product.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -51,20 +55,20 @@ class Product {
   factory Product.fromMap(Map<String, dynamic> map, {String? id}) {
     final imageUrl = _string(map['imageUrl'] ?? map['image']);
     final images = _stringList(map['images']);
+    final minPrice = _double(map['minPrice'] ?? map['price']);
+    final maxPrice = _double(map['maxPrice'] ?? map['price']);
 
     return Product(
       id: id ?? _string(map['id']),
       name: _string(map['name']),
       brand: _string(map['brand']),
       categoryId: _string(map['categoryId'] ?? map['category']),
-      price: _double(map['price']),
-      oldPrice: _double(map['oldPrice']),
       description: _string(map['description']),
       imageUrl: imageUrl,
       images: images.isEmpty && imageUrl.isNotEmpty ? [imageUrl] : images,
-      storageOptions: _stringList(map['storageOptions'] ?? map['storage']),
-      colorOptions: _stringList(map['colorOptions'] ?? map['colors']),
-      stock: _int(map['stock']),
+      minPrice: minPrice,
+      maxPrice: maxPrice == 0 ? minPrice : maxPrice,
+      totalStock: _int(map['totalStock'] ?? map['stock']),
       rating: _double(map['rating']),
       reviewCount: _int(map['reviewCount']),
       isFeatured: _bool(map['isFeatured']),
@@ -83,14 +87,12 @@ class Product {
         'name': name,
         'brand': brand,
         'categoryId': categoryId,
-        'price': price,
-        'oldPrice': oldPrice,
         'description': description,
         'imageUrl': imageUrl,
         'images': images,
-        'storageOptions': storageOptions,
-        'colorOptions': colorOptions,
-        'stock': stock,
+        'minPrice': minPrice,
+        'maxPrice': maxPrice,
+        'totalStock': totalStock,
         'rating': rating,
         'reviewCount': reviewCount,
         'isFeatured': isFeatured,
