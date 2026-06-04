@@ -153,8 +153,7 @@ class OrderConfirmScreen extends StatelessWidget {
                                     child: Center(
                                       child: Icon(
                                         _getPaymentIcon(paymentMethod),
-                                        color:
-                                            _getPaymentColor(paymentMethod),
+                                        color: _getPaymentColor(paymentMethod),
                                         size: 20,
                                       ),
                                     ),
@@ -317,35 +316,34 @@ class OrderConfirmScreen extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: canOrder
                 ? () async {
-                    final orderId = await context.read<OrderProvider>().placeOrder(
-                          userId: uid,
-                          items: cart.items,
-                          subtotal: cart.subtotal,
-                          discount: cart.discount,
-                          shippingFee: cart.shippingFee,
-                          total: cart.total,
-                          paymentMethod: paymentMethod,
-                          shippingInfo: shippingInfo,
-                        );
+                    final orderId =
+                        await context.read<OrderProvider>().placeOrder(
+                              userId: uid,
+                              items: cart.items,
+                              subtotal: cart.subtotal,
+                              discount: cart.discount,
+                              shippingFee: cart.shippingFee,
+                              total: cart.total,
+                              paymentMethod: paymentMethod,
+                              shippingInfo: shippingInfo,
+                            );
 
                     if (orderId == null || !context.mounted) return;
                     context.read<CartProvider>().clearLocal();
+
+                    // FIX: chỉ truyền orderId (String) thay vì Map
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       AppRoutes.orderSuccess,
                       (route) => route.settings.name == AppRoutes.home,
-                      arguments: {
-                        'paymentMethod': paymentMethod,
-                        'shippingInfo': shippingInfo,
-                      },
+                      arguments: orderId,
                     );
                   }
                 : null,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               backgroundColor: AppTheme.primary,
-              disabledBackgroundColor:
-                  AppTheme.primary.withValues(alpha: 0.5),
+              disabledBackgroundColor: AppTheme.primary.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -402,7 +400,9 @@ class OrderConfirmScreen extends StatelessWidget {
           const SizedBox(height: 8),
           _priceRow(
             'Phí vận chuyển',
-            cart.shippingFee == 0 ? 'Miễn phí' : Formatters.currency(cart.shippingFee),
+            cart.shippingFee == 0
+                ? 'Miễn phí'
+                : Formatters.currency(cart.shippingFee),
             color: cart.shippingFee == 0 ? AppTheme.success : null,
           ),
           Container(
@@ -518,23 +518,23 @@ class OrderConfirmScreen extends StatelessWidget {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map) {
         final rawShipping = args['shippingInfo'];
-        
-        // Convert shipping info to LinkedHashMap<String, String>
+
         Map<String, String> convertShipping(dynamic raw) {
           if (raw is Map<String, String>) {
             return raw;
           } else if (raw is Map) {
             final linkedMap = LinkedHashMap<String, String>();
-            (raw as Map).forEach((key, value) {
+            raw.forEach((key, value) {
               final strKey = key is String ? key : key.toString();
-              final strValue = value is String ? value : (value?.toString() ?? '');
+              final strValue =
+                  value is String ? value : (value?.toString() ?? '');
               linkedMap[strKey] = strValue;
             });
             return linkedMap;
           }
           return <String, String>{};
         }
-        
+
         return {
           'paymentMethod': args['paymentMethod']?.toString() ?? 'COD',
           'shippingInfo': convertShipping(rawShipping),
