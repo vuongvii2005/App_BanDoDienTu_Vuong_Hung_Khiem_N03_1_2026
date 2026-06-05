@@ -58,10 +58,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         body: Center(child: Text('Không tìm thấy sản phẩm')),
       );
     }
-    final productImages = _productImages(product);
+
+    final productImages = _productImages(product, selectedVariant);
     final selectedImageIndex =
-     _selectedImageIndex >= productImages.length ? 0 : _selectedImageIndex;
-    final selectedImageUrl = productImages[selectedImageIndex];
+        _selectedImageIndex >= productImages.length ? 0 : _selectedImageIndex;
+    final selectedImageUrl =
+        productImages.isEmpty ? '' : productImages[selectedImageIndex];
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -105,8 +107,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            _buildImageGallery(productImages, selectedImageUrl, selectedImageIndex),
+            _buildImageGallery(
+              productImages,
+              selectedImageUrl,
+              selectedImageIndex,
+            ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -198,123 +203,144 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       bottomNavigationBar: _buildBottom(product, selectedVariant),
     );
   }
-  Widget _buildImageGallery(
-  List<String> images,
-  String selectedImageUrl,
-  int selectedImageIndex,
-) {
-  return Container(
-    color: AppTheme.white,
-    child: Column(
-      children: [
-        SizedBox(
-          height: 280,
-          width: double.infinity,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CachedNetworkImage(
-                imageUrl: selectedImageUrl,
-                fit: BoxFit.contain,
-                placeholder: (_, __) => const Center(
-                  child: CircularProgressIndicator(color: AppTheme.primary),
-                ),
-                errorWidget: (_, __, ___) => const Icon(
-                  Icons.image_outlined,
-                  size: 80,
-                  color: AppTheme.grey,
-                ),
-              ),
-              if (images.length > 1) ...[
-                Positioned(
-                  left: 12,
-                  child: _imageArrow(
-                    Icons.chevron_left,
-                    () => _changeImage(-1, images.length),
-                  ),
-                ),
-                Positioned(
-                  right: 12,
-                  child: _imageArrow(
-                    Icons.chevron_right,
-                    () => _changeImage(1, images.length),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (images.length > 1)
-          SizedBox(
-            height: 76,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final isSelected = selectedImageIndex == index;
 
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedImageIndex = index),
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color:
-                            isSelected ? AppTheme.primary : AppTheme.greyLight,
-                        width: isSelected ? 2 : 1,
+  Widget _buildImageGallery(
+    List<String> images,
+    String selectedImageUrl,
+    int selectedImageIndex,
+  ) {
+    return Container(
+      color: AppTheme.white,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 280,
+            width: double.infinity,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (selectedImageUrl.isEmpty)
+                  const Icon(
+                    Icons.image_outlined,
+                    size: 80,
+                    color: AppTheme.grey,
+                  )
+                else
+                  CachedNetworkImage(
+                    imageUrl: selectedImageUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
                       ),
                     ),
-                    child: CachedNetworkImage(
-                      imageUrl: images[index],
-                      fit: BoxFit.contain,
+                    errorWidget: (_, __, ___) => const Icon(
+                      Icons.image_outlined,
+                      size: 80,
+                      color: AppTheme.grey,
                     ),
                   ),
-                );
-              },
+                if (images.length > 1) ...[
+                  Positioned(
+                    left: 12,
+                    child: _imageArrow(
+                      Icons.chevron_left,
+                      () => _changeImage(-1, images.length),
+                    ),
+                  ),
+                  Positioned(
+                    right: 12,
+                    child: _imageArrow(
+                      Icons.chevron_right,
+                      () => _changeImage(1, images.length),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-      ],
-    ),
-  );
-}
+          if (images.length > 1)
+            SizedBox(
+              height: 76,
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final isSelected = selectedImageIndex == index;
 
-Widget _imageArrow(IconData icon, VoidCallback onTap) {
-  return Material(
-    color: Colors.white.withValues(alpha: 0.85),
-    shape: const CircleBorder(),
-    child: IconButton(
-      icon: Icon(icon, color: AppTheme.black),
-      onPressed: onTap,
-    ),
-  );
-}
-
-void _changeImage(int direction, int imageCount) {
-  if (imageCount <= 1) return;
-
-  setState(() {
-    _selectedImageIndex =
-        (_selectedImageIndex + direction + imageCount) % imageCount;
-  });
-}
-
-List<String> _productImages(Product product) {
-  final images = product.images
-      .where((image) => image.trim().isNotEmpty)
-      .toList();
-
-  if (images.isEmpty && product.imageUrl.trim().isNotEmpty) {
-    images.add(product.imageUrl);
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedImageIndex = index),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppTheme.primary
+                              : AppTheme.greyLight,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: images[index],
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
-  return images;
-}
+  Widget _imageArrow(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.85),
+      shape: const CircleBorder(),
+      child: IconButton(
+        icon: Icon(icon, color: AppTheme.black),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  void _changeImage(int direction, int imageCount) {
+    if (imageCount <= 1) return;
+
+    setState(() {
+      _selectedImageIndex =
+          (_selectedImageIndex + direction + imageCount) % imageCount;
+    });
+  }
+
+  List<String> _productImages(
+    Product product,
+    ProductVariant? selectedVariant,
+  ) {
+    final images = <String>[];
+
+    void addImage(String imageUrl) {
+      final trimmed = imageUrl.trim();
+      if (trimmed.isNotEmpty && !images.contains(trimmed)) {
+        images.add(trimmed);
+      }
+    }
+
+    addImage(selectedVariant?.imageUrl ?? '');
+    for (final image in product.images) {
+      addImage(image);
+    }
+    addImage(product.imageUrl);
+
+    return images;
+  }
 
   Widget _priceBlock(Product product, ProductVariant? selectedVariant) {
     final price = selectedVariant == null
@@ -360,6 +386,7 @@ List<String> _productImages(Product product) {
           _selectedStorage = storage;
           _selectedColor = null;
           _quantity = 1;
+          _selectedImageIndex = 0;
         });
       },
     );
@@ -381,6 +408,7 @@ List<String> _productImages(Product product) {
         setState(() {
           _selectedColor = color;
           _quantity = 1;
+          _selectedImageIndex = 0;
         });
       },
     );

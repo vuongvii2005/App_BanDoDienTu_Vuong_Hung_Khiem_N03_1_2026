@@ -112,6 +112,99 @@ làm phần content
 
 Cấu trúc thư mục
 Cấu trúc thư mục dự án hiện tại
+lib/                              # Source code chính của ứng dụng Flutter
+│
+├── main.dart                     # Điểm khởi động app, init Firebase, Provider, Theme, Routes
+├── firebase_options.dart         # Cấu hình Firebase cho các nền tảng
+│
+├── config/                       # Cấu hình chung của app
+│   ├── app_routes.dart           # Quản lý route, điều hướng giữa các màn hình
+│   └── app_theme.dart            # Quản lý theme, màu sắc, style giao diện
+│
+├── database/                     # Dữ liệu mẫu và seed dữ liệu
+│   ├── mock_data.dart            # Dữ liệu giả/local để test giao diện
+│   └── seed_firestore.dart       # Đẩy dữ liệu mẫu lên Firestore
+│
+├── models/                       # Data models - cấu trúc dữ liệu
+│   ├── user_model.dart           # Model người dùng
+│   ├── product_model.dart        # Model sản phẩm
+│   ├── category_model.dart       # Model danh mục
+│   ├── cart_item_model.dart      # Model sản phẩm trong giỏ hàng
+│   ├── order_model.dart          # Model đơn hàng
+│   └── review_model.dart         # Model đánh giá sản phẩm
+│
+├── services/                     # Xử lý Firebase/Auth/Firestore
+│   ├── auth_service.dart         # Đăng nhập, đăng ký, đăng xuất
+│   ├── user_service.dart         # Lấy/cập nhật thông tin user
+│   ├── product_service.dart      # Lấy/thêm/sửa/xóa sản phẩm
+│   ├── category_service.dart     # Lấy danh mục sản phẩm
+│   ├── cart_service.dart         # Thêm/xóa/cập nhật giỏ hàng
+│   ├── order_service.dart        # Tạo đơn hàng, lấy lịch sử đơn
+│   └── review_service.dart       # Xử lý đánh giá sản phẩm
+│
+├── providers/                    # State management - quản lý trạng thái app
+│   ├── auth_provider.dart        # State đăng nhập, user hiện tại, role user/admin
+│   ├── user_provider.dart        # State thông tin cá nhân user
+│   ├── product_provider.dart     # State sản phẩm, lọc, tìm kiếm
+│   ├── category_provider.dart    # State danh mục
+│   ├── cart_provider.dart        # State giỏ hàng, tổng tiền
+│   ├── order_provider.dart       # State đơn hàng, lịch sử đơn hàng
+│   └── search_provider.dart      # State tìm kiếm sản phẩm
+│
+├── screens/                      # Các màn hình chính của app
+│   ├── home_screen.dart          # Trang chủ, bottom navigation, tab cá nhân
+│   ├── product_list_screen.dart  # Danh sách sản phẩm
+│   ├── product_detail_screen.dart # Chi tiết sản phẩm
+│   ├── search_screen.dart        # Tìm kiếm sản phẩm
+│   ├── cart_screen.dart          # Giỏ hàng
+│   ├── checkout_screen.dart      # Nhập thông tin giao hàng
+│   ├── payment_method_screen.dart # Chọn phương thức thanh toán
+│   ├── order_confirm_screen.dart # Xác nhận đơn hàng
+│   ├── order_success_screen.dart # Đặt hàng thành công
+│   ├── order_history_screen.dart # Lịch sử đơn hàng
+│   ├── order_detail_screen.dart  # Chi tiết đơn hàng
+│   │
+│   ├── auth/                     # Màn hình xác thực
+│   │   ├── login_screen.dart     # Đăng nhập
+│   │   └── register_screen.dart  # Đăng ký
+│   │
+│   └── admin/                    # Màn hình quản trị
+│       └── admin_dashboard_screen.dart # Trang quản trị cơ bản
+│
+├── widgets/                      # Component giao diện dùng lại
+│   ├── common/                   # Widget dùng chung
+│   │   ├── bottom_nav_bar.dart   # Thanh điều hướng dưới
+│   │   ├── loading_widget.dart   # Loading
+│   │   └── primary_button.dart   # Nút chính
+│   │
+│   ├── home/                     # Widget trang chủ
+│   │   ├── banner_slider.dart    # Banner trượt
+│   │   ├── category_section.dart # Khu vực danh mục
+│   │   └── featured_products.dart # Sản phẩm nổi bật
+│   │
+│   ├── product/                  # Widget sản phẩm
+│   │   ├── product_card.dart     # Thẻ sản phẩm
+│   │   ├── quantity_selector.dart # Chọn số lượng
+│   │   ├── rating_stars.dart     # Hiển thị sao đánh giá
+│   │   └── review_list.dart      # Danh sách đánh giá
+│   │
+│   ├── cart/                     # Widget giỏ hàng
+│   │   ├── cart_item_tile.dart   # Một sản phẩm trong giỏ
+│   │   └── cart_summary.dart     # Tổng tiền giỏ hàng
+│   │
+│   └── order/                    # Widget đơn hàng
+│       ├── order_card.dart       # Thẻ đơn hàng
+│       └── order_status_badge.dart # Trạng thái đơn hàng
+│
+└── utils/                        # Hàm tiện ích dùng chung
+    ├── constants.dart            # Hằng số app
+    ├── formatters.dart           # Format tiền, ngày tháng
+    ├── validators.dart           # Validate form, email, phone
+    └── baitap.dart               # File bài tập/test riêng
+
+
+Cấu trúc thư mục đã hoàn chỉnh và phát triển tiếp các phần tiếp theo
+
 App_BanDoDienTu_Vuong_Hung_Khiem_N03_1_2026/
 │
 ├── 📄 Tệp Cấu Hình Root
@@ -204,3 +297,4 @@ App_BanDoDienTu_Vuong_Hung_Khiem_N03_1_2026/
 
 
 Cấu trúc thư mục đã hoàn chỉnh và phát triển tiếp các phần tiếp theo
+

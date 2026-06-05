@@ -190,3 +190,13 @@ Review mới là file note( để vương viết cấm động vào)
 Sản phẩm yêu thích chưa có
 Mã giảm giá / voucher chưa thật (nên viết mã giảm giá sớm để thiết kế nhiều thứ khác)
 Thanh toán chưa thực tế(có thể làm sau)
+
+//====================================================
+
+cải thiện chuẩn giao diện chính sao  cho chuyên nghiệp nhất và các hiệu ứng tương tác mượt nhất
+
+//================================================================================================== 6/4/2026
+
+cập  nhật xong phần login đăng nhập nahnh bằng save và hiển thị thanh toán thành công với những mã qr và form điền thẻ
+
+cập nhật thành công tỉnh thành ở chọn tỉnh thành và quận huyện ứng với nó.

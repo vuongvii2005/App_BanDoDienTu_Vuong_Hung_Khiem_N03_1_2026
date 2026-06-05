@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:collection';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
@@ -24,6 +25,36 @@ class OrderConfirmScreen extends StatelessWidget {
         return 'Chuyển khoản ngân hàng';
       default:
         return id;
+    }
+  }
+
+  IconData _getPaymentIcon(String id) {
+    switch (id) {
+      case 'COD':
+        return Icons.local_shipping_outlined;
+      case 'CARD':
+        return Icons.credit_card_outlined;
+      case 'MOMO':
+        return Icons.qr_code_2;
+      case 'BANK':
+        return Icons.account_balance_outlined;
+      default:
+        return Icons.payment_outlined;
+    }
+  }
+
+  Color _getPaymentColor(String id) {
+    switch (id) {
+      case 'COD':
+        return const Color(0xFF4CAF50);
+      case 'CARD':
+        return const Color(0xFF2196F3);
+      case 'MOMO':
+        return const Color(0xFFE91E8C);
+      case 'BANK':
+        return const Color(0xFF607D8B);
+      default:
+        return AppTheme.primary;
     }
   }
 
@@ -115,18 +146,15 @@ class OrderConfirmScreen extends StatelessWidget {
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE91E8C)
+                                      color: _getPaymentColor(paymentMethod)
                                           .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Center(
-                                      child: Text(
-                                        'M',
-                                        style: TextStyle(
-                                          color: Color(0xFFE91E8C),
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 18,
-                                        ),
+                                    child: Center(
+                                      child: Icon(
+                                        _getPaymentIcon(paymentMethod),
+                                        color: _getPaymentColor(paymentMethod),
+                                        size: 20,
                                       ),
                                     ),
                                   ),
@@ -272,43 +300,74 @@ class OrderConfirmScreen extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      color: AppTheme.white,
-      child: ElevatedButton.icon(
-        onPressed: canOrder
-            ? () async {
-                final orderId = await context.read<OrderProvider>().placeOrder(
-                      userId: uid,
-                      items: cart.items,
-                      subtotal: cart.subtotal,
-                      discount: cart.discount,
-                      shippingFee: cart.shippingFee,
-                      total: cart.total,
-                      paymentMethod: _paymentLabel(paymentMethod),
-                      shippingAddress: shippingInfo['address'] ?? '',
-                      phone: shippingInfo['phone'] ?? '',
-                    );
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: canOrder
+                ? () async {
+                    final orderId =
+                        await context.read<OrderProvider>().placeOrder(
+                              userId: uid,
+                              items: cart.items,
+                              subtotal: cart.subtotal,
+                              discount: cart.discount,
+                              shippingFee: cart.shippingFee,
+                              total: cart.total,
+                              paymentMethod: paymentMethod,
+                              shippingInfo: shippingInfo,
+                            );
 
-                if (orderId == null || !context.mounted) return;
-                context.read<CartProvider>().clearLocal();
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.orderSuccess,
-                  (route) => route.settings.name == AppRoutes.home,
-                  arguments: orderId,
-                );
-              }
-            : null,
-        icon: orderProvider.isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.lock_outline, color: Colors.white, size: 18),
-        label: const Text('Đặt hàng'),
+                    if (orderId == null || !context.mounted) return;
+                    context.read<CartProvider>().clearLocal();
+
+                    // FIX: chỉ truyền orderId (String) thay vì Map
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.orderSuccess,
+                      (route) => route.settings.name == AppRoutes.home,
+                      arguments: orderId,
+                    );
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: AppTheme.primary,
+              disabledBackgroundColor: AppTheme.primary.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: orderProvider.isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.lock_outline, color: Colors.white, size: 18),
+            label: Text(
+              'Đặt hàng',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: canOrder ? Colors.white : Colors.white60,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -319,16 +378,26 @@ class OrderConfirmScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
           _priceRow('Tạm tính', Formatters.currency(cart.subtotal)),
-          if (cart.discount > 0)
+          if (cart.discount > 0) ...[
+            const SizedBox(height: 8),
             _priceRow(
-              'Giảm giá (WELCOME10)',
+              'Giảm giá',
               '-${Formatters.currency(cart.discount)}',
-              color: AppTheme.error,
+              color: AppTheme.success,
             ),
+          ],
+          const SizedBox(height: 8),
           _priceRow(
             'Phí vận chuyển',
             cart.shippingFee == 0
@@ -336,18 +405,26 @@ class OrderConfirmScreen extends StatelessWidget {
                 : Formatters.currency(cart.shippingFee),
             color: cart.shippingFee == 0 ? AppTheme.success : null,
           ),
-          const Divider(height: 20),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            height: 1,
+            color: Colors.grey.withValues(alpha: 0.15),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Tổng cộng',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
               ),
               Text(
                 Formatters.currency(cart.total),
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.primary,
                 ),
@@ -369,6 +446,13 @@ class OrderConfirmScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -382,6 +466,7 @@ class OrderConfirmScreen extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
                 ),
                 if (action != null)
@@ -389,7 +474,11 @@ class OrderConfirmScreen extends StatelessWidget {
                     onPressed: onAction,
                     child: Text(
                       action,
-                      style: const TextStyle(color: AppTheme.primary),
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
               ],
@@ -425,20 +514,34 @@ class OrderConfirmScreen extends StatelessWidget {
   }
 
   Map<String, dynamic> _routeArgs(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is Map) {
-      final rawShipping = args['shippingInfo'];
-      return {
-        'paymentMethod': args['paymentMethod']?.toString() ?? 'COD',
-        'shippingInfo': rawShipping is Map
-            ? rawShipping.map(
-                (key, value) => MapEntry(
-                  key.toString(),
-                  value?.toString() ?? '',
-                ),
-              )
-            : <String, String>{},
-      };
+    try {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map) {
+        final rawShipping = args['shippingInfo'];
+
+        Map<String, String> convertShipping(dynamic raw) {
+          if (raw is Map<String, String>) {
+            return raw;
+          } else if (raw is Map) {
+            final linkedMap = LinkedHashMap<String, String>();
+            raw.forEach((key, value) {
+              final strKey = key is String ? key : key.toString();
+              final strValue =
+                  value is String ? value : (value?.toString() ?? '');
+              linkedMap[strKey] = strValue;
+            });
+            return linkedMap;
+          }
+          return <String, String>{};
+        }
+
+        return {
+          'paymentMethod': args['paymentMethod']?.toString() ?? 'COD',
+          'shippingInfo': convertShipping(rawShipping),
+        };
+      }
+    } catch (e) {
+      debugPrint('Error parsing route args: $e');
     }
     return {
       'paymentMethod': 'COD',
