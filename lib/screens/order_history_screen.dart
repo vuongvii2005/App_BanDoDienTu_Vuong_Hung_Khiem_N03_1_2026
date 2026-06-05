@@ -8,7 +8,6 @@ import '../models/order_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_provider.dart';
 import '../utils/formatters.dart';
-import '../widgets/common/bottom_nav_bar.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -19,7 +18,6 @@ class OrderHistoryScreen extends StatefulWidget {
 
 class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   OrderStatus? _filter;
-  int _navIndex = 3;
   String? _loadedUserId;
 
   final _tabs = [
@@ -53,7 +51,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(title: const Text('Đơn hàng của tôi')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+        AppRoutes.home,
+          (route) => false,
+          ),
+         ),
+       title: const Text('Đơn hàng của tôi'),
+      ),
       body: uid == null
           ? _needLogin()
           : !auth.canBuy
@@ -86,21 +94,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     ),
                   ],
                 ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _navIndex,
-        onTap: (i) {
-          setState(() => _navIndex = i);
-          if (i == 0) Navigator.pushReplacementNamed(context, AppRoutes.home);
-          if (i == 2) Navigator.pushNamed(context, AppRoutes.cart);
-          if (i == 4) {
-            if (uid == null) {
-              Navigator.pushNamed(context, AppRoutes.login);
-            } else if (auth.canManageShop) {
-              Navigator.pushNamed(context, AppRoutes.admin);
-            }
-          }
-        },
-      ),
     );
   }
 
