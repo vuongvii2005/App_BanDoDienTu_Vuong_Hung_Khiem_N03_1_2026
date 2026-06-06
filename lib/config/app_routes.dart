@@ -14,6 +14,7 @@ import '../screens/payment_method_screen.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/product_list_screen.dart';
 import '../screens/search_screen.dart';
+import '../screens/profile_info_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -30,6 +31,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String admin = '/admin';
+  static const String profileInfo = '/profile-info';
 
   static Map<String, WidgetBuilder> get routes => {
         home: (_) => const HomeScreen(),
@@ -54,5 +56,6 @@ class AppRoutes {
         login: (_) => const LoginScreen(),
         register: (_) => const RegisterScreen(),
         admin: (_) => const AdminDashboardScreen(),
+        profileInfo: (_) => const ProfileInfoScreen(),
       };
 }
