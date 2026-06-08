@@ -52,6 +52,7 @@ class CartService {
     if (existing != null) {
       await _items(uid).doc(existing.id).update({
         'quantity': existing.quantity + item.quantity,
+        'price': item.price,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return;

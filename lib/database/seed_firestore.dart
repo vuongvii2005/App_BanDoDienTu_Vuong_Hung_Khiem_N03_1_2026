@@ -30,6 +30,7 @@ Future<void> seedFirestoreData() async {
       'stock': FieldValue.delete(),
       'storageOptions': FieldValue.delete(),
       'colorOptions': FieldValue.delete(),
+      'dealQuantity': FieldValue.delete(),
     });
     productBatch.set(docRef, productDoc, SetOptions(merge: true));
   }
@@ -259,6 +260,12 @@ final List<Map<String, dynamic>> _products = [
     rating: 4.7,
     reviewCount: 180,
     isFeatured: true,
+    isHotDeal: true,
+    salePrice: 15990000,
+    dealStartAt: DateTime(2026, 1, 1),
+    dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+    dealSold: 22,
+    dealStock: 40,
   ),
   _product(
     id: 'samsung-galaxy-s24-ultra',
@@ -274,6 +281,12 @@ final List<Map<String, dynamic>> _products = [
     rating: 4.7,
     reviewCount: 210,
     isFeatured: true,
+    isHotDeal: true,
+    salePrice: 19990000,
+    dealStartAt: DateTime(2026, 1, 1),
+    dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+    dealSold: 14,
+    dealStock: 25,
   ),
   _product(
     id: 'xiaomi-14',
@@ -302,6 +315,12 @@ final List<Map<String, dynamic>> _products = [
     stock: 30,
     rating: 4.5,
     reviewCount: 96,
+    isHotDeal: true,
+    salePrice: 7590000,
+    dealStartAt: DateTime(2026, 1, 1),
+    dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+    dealSold: 31,
+    dealStock: 45,
   ),
   _product(
     id: 'macbook-air-m2',
@@ -317,6 +336,12 @@ final List<Map<String, dynamic>> _products = [
     rating: 4.8,
     reviewCount: 142,
     isFeatured: true,
+    isHotDeal: true,
+    salePrice: 17990000,
+    dealStartAt: DateTime(2026, 1, 1),
+    dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+    dealSold: 9,
+    dealStock: 20,
   ),
   _product(
     id: 'macbook-pro-m3',
@@ -842,6 +867,12 @@ Map<String, dynamic> _product({
   required double rating,
   required int reviewCount,
   bool isFeatured = false,
+  bool isHotDeal = false,
+  int? salePrice,
+  DateTime? dealStartAt,
+  DateTime? dealEndAt,
+  int dealSold = 0,
+  int? dealStock,
 }) {
   final imageUrls = productImageLinks[id] ??
       [
@@ -877,6 +908,12 @@ Map<String, dynamic> _product({
     'rating': rating,
     'reviewCount': reviewCount,
     'isFeatured': isFeatured,
+    'isHotDeal': isHotDeal,
+    'salePrice': salePrice,
+    'dealStartAt': dealStartAt,
+    'dealEndAt': dealEndAt,
+    'dealSold': dealSold,
+    'dealStock': dealStock ?? stock,
     'isActive': true,
     'createdAt': _now,
     'updatedAt': _now,

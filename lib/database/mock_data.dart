@@ -24,6 +24,12 @@ class MockData {
       description:
           'Điện thoại cao cấp với hiệu năng mạnh, thiết kế sang trọng và camera 48MP.',
       isFeatured: true,
+      isHotDeal: true,
+      salePrice: 24990000,
+      dealStartAt: DateTime(2026, 1, 1),
+      dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+      dealSold: 12,
+      dealStock: 20,
     ),
     Product(
       id: 'airpods-pro-2',
@@ -42,6 +48,12 @@ class MockData {
       ],
       description: 'Tai nghe không dây có chống ồn chủ động.',
       isFeatured: true,
+      isHotDeal: true,
+      salePrice: 4990000,
+      dealStartAt: DateTime(2026, 1, 1),
+      dealEndAt: DateTime(2026, 12, 31, 23, 59, 59),
+      dealSold: 24,
+      dealStock: 35,
     ),
     Product(
       id: 'galaxy-s24-ultra',

@@ -49,7 +49,7 @@ class CartItem {
           variant.imageUrl.isNotEmpty ? variant.imageUrl : product.imageUrl,
       storage: variant.storage,
       color: variant.color,
-      price: variant.price,
+      price: product.hasActiveDeal ? product.effectivePrice : variant.price,
       quantity: quantity,
     );
   }

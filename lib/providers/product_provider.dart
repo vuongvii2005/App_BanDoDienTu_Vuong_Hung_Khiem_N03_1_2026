@@ -39,6 +39,24 @@ class ProductProvider extends ChangeNotifier {
   List<Product> get featuredProducts =>
       _products.where((product) => product.isFeatured).toList();
 
+  List<Product> get hotDeals {
+    final products =
+        _products.where((product) => product.hasActiveDeal).toList();
+
+    products.sort((first, second) {
+      final firstEndAt = first.dealEndAt;
+      final secondEndAt = second.dealEndAt;
+      if (firstEndAt == null && secondEndAt == null) {
+        return first.name.toLowerCase().compareTo(second.name.toLowerCase());
+      }
+      if (firstEndAt == null) return 1;
+      if (secondEndAt == null) return -1;
+      return firstEndAt.compareTo(secondEndAt);
+    });
+
+    return products;
+  }
+
   List<Product> get filteredProducts {
     final query = _searchQuery.trim().toLowerCase();
 
@@ -141,6 +159,56 @@ class ProductProvider extends ChangeNotifier {
     } catch (error) {
       _adminError =
           isActive ? 'Không khôi phục được sản phẩm' : 'Không ẩn được sản phẩm';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> updateHotDeal(
+    String productId,
+    int salePrice,
+    DateTime? dealStartAt,
+    DateTime? dealEndAt,
+    int? dealStock,
+  ) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      await _productService.updateHotDeal(
+        productId,
+        salePrice,
+        dealStartAt,
+        dealEndAt,
+        dealStock,
+      );
+      await Future.wait([
+        loadProducts(),
+        loadAdminProducts(),
+      ]);
+      return true;
+    } catch (error) {
+      _adminError = 'Không tạo được deal';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> disableHotDeal(String productId) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      await _productService.disableHotDeal(productId);
+      await Future.wait([
+        loadProducts(),
+        loadAdminProducts(),
+      ]);
+      return true;
+    } catch (error) {
+      _adminError = 'Không tắt được deal';
       return false;
     } finally {
       _setAdminLoading(false);

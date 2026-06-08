@@ -299,14 +299,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _priceText(product),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (product.hasActiveDeal)
+                              Text(
+                                Formatters.currency(product.price),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.grey,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            Text(
+                              _priceText(product),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () => _goChooseVariant(product),
                         child: Container(
@@ -366,7 +387,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   String _priceText(Product product) {
-    return Formatters.currency(product.minPrice);
+    return Formatters.currency(product.effectivePrice);
   }
 
   String _screenTitle(CategoryProvider categories, String? categoryId) {

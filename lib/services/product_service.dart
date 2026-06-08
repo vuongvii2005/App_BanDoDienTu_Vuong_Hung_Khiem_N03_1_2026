@@ -142,6 +142,45 @@ class ProductService {
     });
   }
 
+  Future<void> updateHotDeal(
+    String productId,
+    int salePrice,
+    DateTime? dealStartAt,
+    DateTime? dealEndAt,
+    int? dealStock,
+  ) async {
+    if (productId.trim().isEmpty) {
+      throw ArgumentError('Product id cannot be empty.');
+    }
+
+    await _products.doc(productId).update({
+      'isHotDeal': true,
+      'salePrice': salePrice,
+      'dealStartAt': dealStartAt,
+      'dealEndAt': dealEndAt,
+      'dealStock': dealStock,
+      'dealSold': 0,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> disableHotDeal(String productId) async {
+    if (productId.trim().isEmpty) {
+      throw ArgumentError('Product id cannot be empty.');
+    }
+
+    await _products.doc(productId).update({
+      'isHotDeal': false,
+      'salePrice': FieldValue.delete(),
+      'dealStartAt': FieldValue.delete(),
+      'dealEndAt': FieldValue.delete(),
+      'dealStock': FieldValue.delete(),
+      'dealSold': 0,
+      'dealQuantity': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _ensureDefaultVariant(String productId, Product product) async {
     final snapshot = await _variants(productId).limit(1).get();
     if (snapshot.docs.isNotEmpty) return;

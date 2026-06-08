@@ -101,28 +101,41 @@ class ProductCard extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 5),
-                                SizedBox(
-                                  height: 16,
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: AppTheme.star,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        '${product.rating}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.grey,
+                                if (!product.hasActiveDeal) ...[
+                                  const SizedBox(height: 5),
+                                  SizedBox(
+                                    height: 16,
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          color: AppTheme.star,
+                                          size: 13,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '${product.rating}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                ],
                                 const Spacer(),
+                                if (product.hasActiveDeal)
+                                  Text(
+                                    Formatters.currency(product.price),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.grey,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
                                 Text(
                                   _priceText(product),
                                   maxLines: 1,
@@ -178,7 +191,7 @@ class ProductCard extends StatelessWidget {
   }
 
   String _priceText(Product product) {
-    return Formatters.currency(product.minPrice);
+    return Formatters.currency(product.effectivePrice);
   }
 
   void _loadFavoritesIfNeeded(

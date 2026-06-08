@@ -436,6 +436,8 @@ class _ProductsTabState extends State<_ProductsTab> {
                 categories: categoryProvider.categories,
                 onEdit: () => _openProductForm(context, product: product),
                 onToggleActive: () => _toggleProductActive(context, product),
+                onCreateDeal: () => _openHotDealDialog(context, product),
+                onDisableDeal: () => _disableHotDeal(context, product),
               ),
             ),
         ],
@@ -507,6 +509,49 @@ class _ProductsTabState extends State<_ProductsTab> {
       success
           ? (nextActive ? 'Đã khôi phục sản phẩm' : 'Đã ẩn sản phẩm')
           : context.read<ProductProvider>().adminError ?? 'Không cập nhật được',
+    );
+  }
+
+  Future<void> _openHotDealDialog(
+    BuildContext context,
+    Product product,
+  ) async {
+    final input = await showDialog<_HotDealInput>(
+      context: context,
+      builder: (_) => _HotDealDialog(product: product),
+    );
+    if (!context.mounted || input == null) return;
+
+    final success = await context.read<ProductProvider>().updateHotDeal(
+          product.id,
+          input.salePrice,
+          input.dealStartAt,
+          input.dealEndAt,
+          input.dealStock,
+        );
+    if (!context.mounted) return;
+
+    _showSnack(
+      context,
+      success
+          ? 'Đã tạo deal'
+          : context.read<ProductProvider>().adminError ?? 'Không tạo được deal',
+    );
+  }
+
+  Future<void> _disableHotDeal(
+    BuildContext context,
+    Product product,
+  ) async {
+    final success =
+        await context.read<ProductProvider>().disableHotDeal(product.id);
+    if (!context.mounted) return;
+
+    _showSnack(
+      context,
+      success
+          ? 'Đã tắt deal'
+          : context.read<ProductProvider>().adminError ?? 'Không tắt được deal',
     );
   }
 }
@@ -852,12 +897,16 @@ class _ProductCard extends StatelessWidget {
     required this.categories,
     required this.onEdit,
     required this.onToggleActive,
+    required this.onCreateDeal,
+    required this.onDisableDeal,
   });
 
   final Product product;
   final List<CategoryModel> categories;
   final VoidCallback onEdit;
   final VoidCallback onToggleActive;
+  final VoidCallback onCreateDeal;
+  final VoidCallback onDisableDeal;
 
   @override
   Widget build(BuildContext context) {
@@ -925,17 +974,23 @@ class _ProductCard extends StatelessWidget {
                         icon: Icons.star_outline,
                         text: 'Nổi bật',
                       ),
+                    if (product.hasActiveDeal)
+                      const _MiniMetric(
+                        icon: Icons.local_fire_department_outlined,
+                        text: 'Đang deal',
+                      ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     IconButton.filledTonal(
                       tooltip: 'Sửa sản phẩm',
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit_outlined, size: 18),
                     ),
-                    const SizedBox(width: 8),
                     IconButton.filledTonal(
                       tooltip: product.isActive
                           ? 'Ẩn sản phẩm'
@@ -948,6 +1003,17 @@ class _ProductCard extends StatelessWidget {
                         size: 18,
                       ),
                     ),
+                    OutlinedButton.icon(
+                      onPressed: onCreateDeal,
+                      icon: const Icon(Icons.local_fire_department, size: 16),
+                      label: const Text('Tạo deal'),
+                    ),
+                    if (product.isHotDeal)
+                      OutlinedButton.icon(
+                        onPressed: onDisableDeal,
+                        icon: const Icon(Icons.flash_off_outlined, size: 16),
+                        label: const Text('Tắt deal'),
+                      ),
                   ],
                 ),
               ],
@@ -956,6 +1022,431 @@ class _ProductCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _HotDealInput {
+  const _HotDealInput({
+    required this.salePrice,
+    required this.dealStartAt,
+    required this.dealEndAt,
+    this.dealStock,
+  });
+
+  final int salePrice;
+  final DateTime dealStartAt;
+  final DateTime dealEndAt;
+  final int? dealStock;
+}
+
+class _HotDealDialog extends StatefulWidget {
+  const _HotDealDialog({required this.product});
+
+  final Product product;
+
+  @override
+  State<_HotDealDialog> createState() => _HotDealDialogState();
+}
+
+class _HotDealDialogState extends State<_HotDealDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _salePriceController;
+  late final TextEditingController _stockController;
+  late DateTime _selectedEndAt;
+  bool _formattingSalePrice = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final product = widget.product;
+    _salePriceController = TextEditingController(
+      text: product.salePrice == null ? '' : _moneyInput(product.salePrice!),
+    );
+    _stockController = TextEditingController(
+      text: product.dealStock == null ? '' : product.dealStock.toString(),
+    );
+    final currentEndAt = product.dealEndAt;
+    _selectedEndAt =
+        currentEndAt != null && currentEndAt.isAfter(DateTime.now())
+            ? currentEndAt
+            : _todayAt2359();
+  }
+
+  @override
+  void dispose() {
+    _salePriceController.dispose();
+    _stockController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    final salePrice = _salePrice;
+    final dealStock = _dealStock;
+    final saving = salePrice > 0 && salePrice < product.price
+        ? product.price - salePrice
+        : 0;
+    final discountPercent =
+        saving > 0 ? (saving * 100 / product.price).round() : 0;
+
+    return AlertDialog(
+      title: const Text('Tạo deal'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.always,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _dealProductSummary(product),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _salePriceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Giá deal',
+                    hintText: '4.990.000đ',
+                    prefixIcon: Icon(Icons.local_offer_outlined),
+                  ),
+                  onChanged: _formatSalePrice,
+                  validator: _salePriceValidator,
+                ),
+                const SizedBox(height: 10),
+                _sectionLabel('Gợi ý giảm giá'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [5, 10, 15, 20].map((percent) {
+                    return _quickChip(
+                      label: '-$percent%',
+                      onTap: () => _applyDiscount(percent),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                _sectionLabel('Thời gian kết thúc'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _quickChip(
+                      label: 'Hôm nay 23:59',
+                      selected: _isSameMinute(_selectedEndAt, _todayAt2359()),
+                      onTap: () => _setEndAt(_todayAt2359()),
+                    ),
+                    _quickChip(
+                      label: '24 giờ',
+                      onTap: () => _setEndAt(
+                          DateTime.now().add(const Duration(hours: 24))),
+                    ),
+                    _quickChip(
+                      label: '3 ngày',
+                      onTap: () => _setEndAt(
+                          DateTime.now().add(const Duration(days: 3))),
+                    ),
+                    _quickChip(
+                      label: '7 ngày',
+                      onTap: () => _setEndAt(
+                          DateTime.now().add(const Duration(days: 7))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _infoLine(
+                  Icons.schedule_outlined,
+                  'Kết thúc: ${Formatters.dateTime(_selectedEndAt)}',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _stockController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Số lượng deal',
+                    prefixIcon: Icon(Icons.inventory_outlined),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  validator: _stockValidator,
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ...[10, 20, 50, 100].map(
+                      (quantity) => _quickChip(
+                        label: '$quantity',
+                        selected: dealStock == quantity,
+                        onTap: quantity <= product.totalStock
+                            ? () => _setStock(quantity)
+                            : null,
+                      ),
+                    ),
+                    _quickChip(
+                      label: 'Theo tồn kho',
+                      selected: product.totalStock > 0 &&
+                          dealStock == product.totalStock,
+                      onTap: product.totalStock > 0
+                          ? () => _setStock(product.totalStock)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _previewCard(
+                  saving: saving,
+                  discountPercent: discountPercent,
+                  endAt: _selectedEndAt,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(
+          onPressed: _canSubmit ? _submit : null,
+          child: const Text('Lưu'),
+        ),
+      ],
+    );
+  }
+
+  Widget _dealProductSummary(Product product) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            product.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _summaryPill('Giá gốc ${Formatters.currency(product.price)}'),
+              _summaryPill('Tồn kho ${product.totalStock}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: AppTheme.black),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w800,
+        color: AppTheme.black,
+      ),
+    );
+  }
+
+  Widget _quickChip({
+    required String label,
+    required VoidCallback? onTap,
+    bool selected = false,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: onTap == null ? null : (_) => onTap(),
+      selectedColor: AppTheme.primary.withValues(alpha: 0.16),
+      labelStyle: TextStyle(
+        color: selected ? AppTheme.primary : AppTheme.black,
+        fontWeight: FontWeight.w700,
+      ),
+      side: BorderSide(
+        color: selected ? AppTheme.primary : AppTheme.greyLight,
+      ),
+    );
+  }
+
+  Widget _infoLine(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppTheme.primary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: AppTheme.grey),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _previewCard({
+    required int saving,
+    required int discountPercent,
+    required DateTime endAt,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Preview',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            saving > 0
+                ? 'Tiết kiệm ${Formatters.currency(saving)} • Giảm $discountPercent%'
+                : 'Nhập giá deal để xem mức giảm',
+            style: TextStyle(
+              fontSize: 12,
+              color: saving > 0 ? AppTheme.primary : AppTheme.grey,
+              fontWeight: saving > 0 ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Kết thúc lúc ${Formatters.dateTime(endAt)}',
+            style: const TextStyle(fontSize: 12, color: AppTheme.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    if (!_canSubmit || !_formKey.currentState!.validate()) return;
+
+    Navigator.pop(
+      context,
+      _HotDealInput(
+        salePrice: _salePrice,
+        dealStartAt: DateTime.now(),
+        dealEndAt: _selectedEndAt,
+        dealStock: _dealStock,
+      ),
+    );
+  }
+
+  void _formatSalePrice(String value) {
+    if (_formattingSalePrice) return;
+    final amount = _parseInt(value);
+    final text = amount <= 0 ? '' : _moneyInput(amount);
+    _formattingSalePrice = true;
+    _salePriceController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(
+        offset: text.isEmpty ? 0 : text.length - 1,
+      ),
+    );
+    _formattingSalePrice = false;
+    setState(() {});
+  }
+
+  void _applyDiscount(int percent) {
+    final salePrice = widget.product.price * (100 - percent) ~/ 100;
+    final text = _moneyInput(salePrice);
+    _salePriceController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length - 1),
+    );
+    setState(() {});
+  }
+
+  void _setEndAt(DateTime value) {
+    setState(() => _selectedEndAt = value);
+  }
+
+  void _setStock(int value) {
+    _stockController.text = value.toString();
+    setState(() {});
+  }
+
+  DateTime _todayAt2359() {
+    final now = DateTime.now();
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59);
+    return todayEnd.isAfter(now)
+        ? todayEnd
+        : now.add(const Duration(hours: 24));
+  }
+
+  bool _isSameMinute(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day &&
+        first.hour == second.hour &&
+        first.minute == second.minute;
+  }
+
+  int get _salePrice => _parseInt(_salePriceController.text);
+
+  int get _dealStock => _parseInt(_stockController.text);
+
+  bool get _canSubmit {
+    final salePrice = _salePrice;
+    final dealStock = _dealStock;
+    return salePrice > 0 &&
+        salePrice < widget.product.price &&
+        _selectedEndAt.isAfter(DateTime.now()) &&
+        dealStock > 0 &&
+        dealStock <= widget.product.totalStock;
+  }
+
+  String? _salePriceValidator(String? value) {
+    final salePrice = _parseInt(value ?? '');
+    if (salePrice <= 0) return 'Giá deal phải > 0';
+    if (salePrice >= widget.product.price) {
+      return 'Giá deal phải nhỏ hơn giá gốc';
+    }
+    return null;
+  }
+
+  String? _stockValidator(String? value) {
+    final stock = _parseInt(value ?? '');
+    if (stock <= 0) return 'Số lượng phải > 0';
+    if (stock > widget.product.totalStock) {
+      return 'Không vượt tồn kho';
+    }
+    return null;
   }
 }
 
@@ -1528,6 +2019,12 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       rating: product?.rating ?? 0,
       reviewCount: product?.reviewCount ?? 0,
       isFeatured: _isFeatured,
+      isHotDeal: product?.isHotDeal ?? false,
+      salePrice: product?.salePrice,
+      dealStartAt: product?.dealStartAt,
+      dealEndAt: product?.dealEndAt,
+      dealStock: product?.dealStock,
+      dealSold: product?.dealSold ?? 0,
       isActive: _isActive,
       createdAt: product?.createdAt,
       updatedAt: DateTime.now(),
@@ -2168,6 +2665,15 @@ String? _nonNegativeNumber(String? value, String message) {
 int _parseInt(String value) {
   final normalized = value.replaceAll(RegExp(r'[^\d-]'), '');
   return int.tryParse(normalized) ?? 0;
+}
+
+String _moneyInput(int amount) {
+  final text = amount.toString();
+  final formatted = text.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => '.',
+  );
+  return '$formatted\u0111';
 }
 
 DateTime? _parseDate(String value) {

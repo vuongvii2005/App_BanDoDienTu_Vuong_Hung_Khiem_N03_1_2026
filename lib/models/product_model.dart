@@ -15,6 +15,12 @@ class Product {
   final double rating;
   final int reviewCount;
   final bool isFeatured;
+  final bool isHotDeal;
+  final int? salePrice;
+  final DateTime? dealStartAt;
+  final DateTime? dealEndAt;
+  final int? dealStock;
+  final int dealSold;
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -33,6 +39,12 @@ class Product {
     this.rating = 0,
     this.reviewCount = 0,
     this.isFeatured = false,
+    this.isHotDeal = false,
+    this.salePrice,
+    this.dealStartAt,
+    this.dealEndAt,
+    this.dealStock,
+    this.dealSold = 0,
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
@@ -45,6 +57,33 @@ class Product {
   List<String> get storageOptions => const <String>[];
   List<String> get colorOptions => const <String>[];
   bool get hasPriceRange => maxPrice > minPrice;
+  bool get hasValidSalePrice => salePrice != null && salePrice! < price;
+
+  bool get hasActiveDeal {
+    final now = DateTime.now();
+    final started = dealStartAt == null || !dealStartAt!.isAfter(now);
+    final notExpired = dealEndAt == null || dealEndAt!.isAfter(now);
+    final inStock = dealStock == null || dealStock! > dealSold;
+    return isHotDeal && hasValidSalePrice && started && notExpired && inStock;
+  }
+
+  int get effectivePrice => hasActiveDeal ? salePrice! : price;
+
+  int get discountPercent {
+    final sale = salePrice;
+    if (sale == null || price <= 0 || sale >= price) return 0;
+    return ((price - sale) * 100 / price).round();
+  }
+
+  bool isActiveHotDeal({DateTime? now}) {
+    if (!isHotDeal || !hasValidSalePrice) return false;
+    final currentTime = now ?? DateTime.now();
+    final startAt = dealStartAt;
+    if (startAt != null && startAt.isAfter(currentTime)) return false;
+    final endAt = dealEndAt;
+    if (endAt != null && !endAt.isAfter(currentTime)) return false;
+    return dealStock == null || dealStock! > dealSold;
+  }
 
   Product copyWith({
     String? id,
@@ -60,6 +99,12 @@ class Product {
     double? rating,
     int? reviewCount,
     bool? isFeatured,
+    bool? isHotDeal,
+    int? salePrice,
+    DateTime? dealStartAt,
+    DateTime? dealEndAt,
+    int? dealStock,
+    int? dealSold,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -78,6 +123,12 @@ class Product {
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       isFeatured: isFeatured ?? this.isFeatured,
+      isHotDeal: isHotDeal ?? this.isHotDeal,
+      salePrice: salePrice ?? this.salePrice,
+      dealStartAt: dealStartAt ?? this.dealStartAt,
+      dealEndAt: dealEndAt ?? this.dealEndAt,
+      dealStock: dealStock ?? this.dealStock,
+      dealSold: dealSold ?? this.dealSold,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -110,6 +161,12 @@ class Product {
       rating: _double(map['rating']),
       reviewCount: _int(map['reviewCount']),
       isFeatured: _bool(map['isFeatured']),
+      isHotDeal: _bool(map['isHotDeal']),
+      salePrice: _nullableMoneyInt(map['salePrice']),
+      dealStartAt: _date(map['dealStartAt']),
+      dealEndAt: _date(map['dealEndAt']),
+      dealStock: _nullableInt(map['dealStock'] ?? map['dealQuantity']),
+      dealSold: _int(map['dealSold'] ?? map['soldCount']),
       isActive: map.containsKey('isActive') ? _bool(map['isActive']) : true,
       createdAt: _date(map['createdAt']),
       updatedAt: _date(map['updatedAt']),
@@ -134,6 +191,12 @@ class Product {
         'rating': rating,
         'reviewCount': reviewCount,
         'isFeatured': isFeatured,
+        'isHotDeal': isHotDeal,
+        'salePrice': salePrice,
+        'dealStartAt': dealStartAt,
+        'dealEndAt': dealEndAt,
+        'dealStock': dealStock,
+        'dealSold': dealSold,
         'isActive': isActive,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
@@ -161,6 +224,12 @@ class Product {
     return sign * (absoluteAmount * 25000).round();
   }
 
+  static int? _nullableMoneyInt(dynamic value) {
+    if (value == null) return null;
+    final amount = _moneyInt(value);
+    return amount > 0 ? amount : null;
+  }
+
   static double _moneyAmount(dynamic value) {
     if (value is num) return value.toDouble();
     final text = value?.toString().trim() ?? '';
@@ -173,6 +242,14 @@ class Product {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _nullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    final parsed = int.tryParse(value.toString());
+    return parsed == null || parsed < 0 ? null : parsed;
   }
 
   static bool _bool(dynamic value) {

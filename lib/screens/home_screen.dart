@@ -9,6 +9,7 @@ import '../widgets/common/bottom_nav_bar.dart';
 import '../widgets/home/banner_slider.dart';
 import '../widgets/home/category_section.dart';
 import '../widgets/home/featured_products.dart';
+import '../widgets/home/flash_sale_section.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -44,8 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const CategorySection(),
                     const SizedBox(height: 20),
                     const FeaturedProducts(),
-                    const SizedBox(height: 20),
-                    _buildFlashSale(),
+                    const FlashSaleSection(),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -209,66 +209,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFlashSale() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const Text(
-              'Deal hot hôm nay',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            _buildCountdown(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCountdown() {
-    return Row(
-      children: ['02', '18', '45'].asMap().entries.map((entry) {
-        return Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                entry.value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (entry.key < 2)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 3),
-                child: Text(
-                  ':',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ),
-          ],
-        );
-      }).toList(),
     );
   }
 }

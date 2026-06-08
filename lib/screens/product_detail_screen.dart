@@ -376,9 +376,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _priceBlock(Product product, ProductVariant? selectedVariant) {
-    final price = selectedVariant == null
-        ? _priceText(product)
-        : Formatters.currency(selectedVariant.price);
+    final basePrice = selectedVariant?.price ?? product.price;
+    final price = product.hasActiveDeal
+        ? Formatters.currency(product.effectivePrice)
+        : selectedVariant == null
+            ? _priceText(product)
+            : Formatters.currency(selectedVariant.price);
+    final oldPrice = product.hasActiveDeal
+        ? basePrice
+        : selectedVariant != null &&
+                selectedVariant.oldPrice > selectedVariant.price
+            ? selectedVariant.oldPrice
+            : 0;
 
     return Row(
       children: [
@@ -390,11 +399,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             color: AppTheme.primary,
           ),
         ),
-        if (selectedVariant != null &&
-            selectedVariant.oldPrice > selectedVariant.price) ...[
+        if (oldPrice > 0) ...[
           const SizedBox(width: 8),
           Text(
-            Formatters.currency(selectedVariant.oldPrice),
+            Formatters.currency(oldPrice),
             style: const TextStyle(
               fontSize: 14,
               color: AppTheme.grey,
@@ -873,7 +881,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   String _priceText(Product product) {
-    return Formatters.currency(product.minPrice);
+    return Formatters.currency(product.effectivePrice);
   }
 
   String _variantOptionTitle(Product product) {
