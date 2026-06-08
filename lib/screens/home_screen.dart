@@ -5,6 +5,7 @@ import '../config/app_routes.dart';
 import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/common/bottom_nav_bar.dart';
 import '../widgets/home/banner_slider.dart';
 import '../widgets/home/category_section.dart';
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 20),
                     const FeaturedProducts(),
                     const FlashSaleSection(),
-                    const SizedBox(height: 80),
+                    const AppFooter(),
                   ],
                 ),
         ),
