@@ -23,6 +23,26 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/users/$(uid)).data.isActive != false;
     }
 
+    function isCustomerRole(role) {
+      return role == 'user'
+        || role == 'customer'
+        || role == 'client'
+        || role == 'member'
+        || role == 'khach_hang'
+        || role == 'khach hang';
+    }
+
+    function isConfiguredAdminEmail() {
+      return signedIn()
+        && request.auth.token.email == 'admin@techstore.local';
+    }
+
+    function configuredAdminActive() {
+      return isConfiguredAdminEmail()
+        && (!userDocExists(request.auth.uid)
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive != false);
+    }
+
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -30,13 +50,20 @@ service cloud.firestore {
     function isUser() {
       return signedIn()
         && userActive(request.auth.uid)
-        && userRole(request.auth.uid) == 'user';
+        && isCustomerRole(userRole(request.auth.uid))
+        && !isConfiguredAdminEmail();
     }
 
     function isAdmin() {
       return signedIn()
-        && userActive(request.auth.uid)
-        && userRole(request.auth.uid) == 'admin';
+        && (configuredAdminActive()
+          || (userActive(request.auth.uid)
+            && userRole(request.auth.uid) == 'admin'));
+    }
+
+    function activeProduct(productId) {
+      return exists(/databases/$(database)/documents/products/$(productId))
+        && get(/databases/$(database)/documents/products/$(productId)).data.isActive == true;
     }
 
     match /categories/{categoryId} {
@@ -50,21 +77,54 @@ service cloud.firestore {
 
       match /variants/{variantId} {
         allow read: if isAdmin()
-          || get(/databases/$(database)/documents/products/$(productId)).data.isActive == true;
+          || (activeProduct(productId) && resource.data.isActive == true);
         allow create, update, delete: if isAdmin();
       }
     }
 
     match /users/{uid} {
-      allow create: if isOwner(uid)
-        && request.resource.data.role == 'user'
-        && request.resource.data.isActive == true
-        && request.resource.data.uid == uid;
+      allow create: if isAdmin()
+        || (isOwner(uid)
+          && request.resource.data.uid == uid
+          && request.resource.data.id == uid
+          && request.resource.data.isActive == true
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'id',
+            'fullName',
+            'email',
+            'phone',
+            'avatarUrl',
+            'address',
+            'role',
+            'isActive',
+            'createdAt',
+            'updatedAt'
+          ])
+          && (request.resource.data.role == 'user'
+            || (isConfiguredAdminEmail()
+              && request.resource.data.role == 'admin')));
       allow read: if isOwner(uid) || isAdmin();
       allow update: if isAdmin()
         || (isOwner(uid)
-          && request.resource.data.uid == resource.data.uid
+          && isUser()
+          && request.resource.data.uid == uid
+          && request.resource.data.id == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'fullName',
+            'phone',
+            'avatarUrl',
+            'address',
+            'email',
+            'uid',
+            'id',
+            'role',
+            'isActive',
+            'updatedAt'
+          ])
+          && (!(resource.data.uid is string) || resource.data.uid == uid)
           && (request.resource.data.role == resource.data.role
+            || request.resource.data.role == 'user'
             || (!(resource.data.role is string)
               && request.resource.data.role == 'user'))
           && (request.resource.data.isActive == resource.data.isActive
@@ -105,8 +165,12 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow create: if isUser()
-        && request.resource.data.userId == request.auth.uid;
+      allow create: if isAdmin()
+        || (isUser()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.items is list
+          && request.resource.data.total is number);
       allow read: if isAdmin()
         || (isUser() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();

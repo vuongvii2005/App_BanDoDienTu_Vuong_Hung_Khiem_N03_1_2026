@@ -1,22 +1,28 @@
-//thao tác giỏ hàng trên Firestore
+// Thao tac gio hang tren Firestore.
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/cart_item_model.dart';
 
 class CartService {
-  CartService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  CartService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? firebaseAuth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
   CollectionReference<Map<String, dynamic>> _items(String userId) {
     return _firestore.collection('carts').doc(userId).collection('items');
   }
 
   Future<List<CartItem>> getCartItems(String userId) async {
-    _checkUserId(userId);
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
 
-    final snapshot = await _items(userId).get();
+    final snapshot = await _items(uid).get();
     final items = snapshot.docs.map(CartItem.fromFirestore).toList();
     items.sort((first, second) {
       final firstDate =
@@ -29,9 +35,10 @@ class CartService {
   }
 
   Future<void> addItem(String userId, CartItem item) async {
-    _checkUserId(userId);
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
 
-    final currentItems = await getCartItems(userId);
+    final currentItems = await getCartItems(uid);
     CartItem? existing;
     for (final cartItem in currentItems) {
       final sameProduct = cartItem.productId == item.productId;
@@ -43,16 +50,15 @@ class CartService {
     }
 
     if (existing != null) {
-      await _items(userId).doc(existing.id).update({
+      await _items(uid).doc(existing.id).update({
         'quantity': existing.quantity + item.quantity,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return;
     }
 
-    final docRef = item.id.trim().isEmpty
-        ? _items(userId).doc()
-        : _items(userId).doc(item.id);
+    final docRef =
+        item.id.trim().isEmpty ? _items(uid).doc() : _items(uid).doc(item.id);
 
     await docRef.set({
       ...item.copyWith(id: docRef.id).toMap(),
@@ -67,30 +73,33 @@ class CartService {
     String itemId,
     int quantity,
   ) async {
-    _checkUserId(userId);
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
     if (itemId.trim().isEmpty) return;
 
     if (quantity <= 0) {
-      await removeItem(userId, itemId);
+      await removeItem(uid, itemId);
       return;
     }
 
-    await _items(userId).doc(itemId).update({
+    await _items(uid).doc(itemId).update({
       'quantity': quantity,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> removeItem(String userId, String itemId) async {
-    _checkUserId(userId);
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
     if (itemId.trim().isEmpty) return;
-    await _items(userId).doc(itemId).delete();
+    await _items(uid).doc(itemId).delete();
   }
 
   Future<void> clearCart(String userId) async {
-    _checkUserId(userId);
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
 
-    final snapshot = await _items(userId).get();
+    final snapshot = await _items(uid).get();
     final batch = _firestore.batch();
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
@@ -98,9 +107,17 @@ class CartService {
     await batch.commit();
   }
 
+  String _currentUserId({String fallbackUserId = ''}) {
+    final currentUid = _auth.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUserId.trim();
+  }
+
   void _checkUserId(String userId) {
     if (userId.trim().isEmpty) {
-      throw ArgumentError('Người dùng cần đăng nhập trước khi dùng giỏ hàng.');
+      throw ArgumentError(
+        'Nguoi dung can dang nhap truoc khi dung gio hang.',
+      );
     }
   }
 }

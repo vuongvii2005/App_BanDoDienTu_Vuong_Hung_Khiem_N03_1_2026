@@ -1,4 +1,5 @@
 //state đơn hàng
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/cart_item_model.dart';
@@ -31,11 +32,12 @@ class OrderProvider extends ChangeNotifier {
   String? get adminError => _adminError;
 
   Future<void> loadOrders(String userId) async {
+    final uid = _currentUserId(userId);
     _setLoading(true);
     _error = null;
 
     try {
-      _orders = await _orderService.getOrdersByUser(userId);
+      _orders = await _orderService.getOrdersByUser(uid);
     } catch (error) {
       _error = 'Không tải được đơn hàng';
       _orders = <OrderModel>[];
@@ -69,7 +71,8 @@ class OrderProvider extends ChangeNotifier {
     required String paymentMethod,
     required Map<String, String> shippingInfo,
   }) async {
-    if (userId.trim().isEmpty) {
+    final uid = _currentUserId(userId);
+    if (uid.isEmpty) {
       _error = 'Cần đăng nhập để đặt hàng';
       notifyListeners();
       return null;
@@ -99,7 +102,7 @@ class OrderProvider extends ChangeNotifier {
 
       final order = OrderModel(
         id: orderId,
-        userId: userId,
+        userId: uid,
         items: items.map(OrderItem.fromCartItem).toList(),
         subtotal: subtotal,
         discount: discount,
@@ -115,7 +118,7 @@ class OrderProvider extends ChangeNotifier {
 
       final savedId = await _orderService.createOrder(order);
       final createdOrderId = savedId.trim().isEmpty ? order.id : savedId;
-      await _cartService.clearCart(userId);
+      await _cartService.clearCart(uid);
       _orders.insert(0, order);
       return createdOrderId;
     } catch (error) {
@@ -192,6 +195,12 @@ class OrderProvider extends ChangeNotifier {
   void _setAdminLoading(bool value) {
     _isAdminLoading = value;
     notifyListeners();
+  }
+
+  String _currentUserId(String fallbackUserId) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUserId.trim();
   }
 
   void _updateCachedOrderStatus(

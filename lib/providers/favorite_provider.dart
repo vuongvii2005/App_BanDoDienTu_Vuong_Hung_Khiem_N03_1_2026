@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/favorite_model.dart';
@@ -34,27 +34,28 @@ class FavoriteProvider extends ChangeNotifier {
   }
 
   Future<void> loadFavorites(String uid, {bool force = false}) async {
-    if (uid.trim().isEmpty) {
+    final userUid = _currentUserId(uid);
+    if (userUid.isEmpty) {
       clear();
       return;
     }
 
-    if (!force && _userId == uid && _hasLoaded) return;
-    if (_isLoading && _userId == uid) return;
+    if (!force && _userId == userUid && _hasLoaded) return;
+    if (_isLoading && _userId == userUid) return;
 
-    if (_userId != uid) {
+    if (_userId != userUid) {
       _favorites = <FavoriteModel>[];
       _favoriteProductIds.clear();
       _hasLoaded = false;
     }
 
-    _userId = uid;
+    _userId = userUid;
     _setLoading(true);
     _error = null;
     final startedMutationVersion = _mutationVersion;
 
     try {
-      final loadedFavorites = await _favoriteService.getFavorites(uid);
+      final loadedFavorites = await _favoriteService.getFavorites(userUid);
       if (startedMutationVersion != _mutationVersion) {
         _hasLoaded = true;
         return;
@@ -88,15 +89,16 @@ class FavoriteProvider extends ChangeNotifier {
     String productId, {
     required bool shouldFavorite,
   }) async {
-    if (uid.trim().isEmpty || productId.trim().isEmpty) return false;
+    final userUid = _currentUserId(uid);
+    if (userUid.isEmpty || productId.trim().isEmpty) return false;
     if (_togglingProductIds.contains(productId)) {
       return isFavorite(productId);
     }
 
-    if (_userId != uid) {
+    if (_userId != userUid) {
       _favorites = <FavoriteModel>[];
       _favoriteProductIds.clear();
-      _userId = uid;
+      _userId = userUid;
       _hasLoaded = true;
     }
 
@@ -111,9 +113,9 @@ class FavoriteProvider extends ChangeNotifier {
 
     try {
       if (shouldFavorite) {
-        await _favoriteService.addFavorite(uid, productId);
+        await _favoriteService.addFavorite(userUid, productId);
       } else {
-        await _favoriteService.removeFavorite(uid, productId);
+        await _favoriteService.removeFavorite(userUid, productId);
       }
       _hasLoaded = true;
       _setLocalFavorite(productId, shouldFavorite);
@@ -178,5 +180,11 @@ class FavoriteProvider extends ChangeNotifier {
     }
 
     return 'Khong cap nhat duoc san pham yeu thich';
+  }
+
+  String _currentUserId(String fallbackUid) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUid.trim();
   }
 }

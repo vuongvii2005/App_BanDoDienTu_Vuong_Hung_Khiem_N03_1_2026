@@ -1,4 +1,5 @@
 //state giỏ hàng
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/cart_item_model.dart';
@@ -42,12 +43,13 @@ class CartProvider extends ChangeNotifier {
   int get total => totalPrice;
 
   Future<void> loadCart(String userId) async {
-    _userId = userId;
+    final uid = _currentUserId(userId);
+    _userId = uid;
     _setLoading(true);
     _error = null;
 
     try {
-      _items = await _cartService.getCartItems(userId);
+      _items = await _cartService.getCartItems(uid);
       if (_items.isEmpty) _coupon = null;
     } catch (error) {
       _error = 'Không tải được giỏ hàng';
@@ -63,7 +65,8 @@ class CartProvider extends ChangeNotifier {
     ProductVariant variant, {
     int quantity = 1,
   }) async {
-    _userId = userId;
+    final uid = _currentUserId(userId);
+    _userId = uid;
     _error = null;
 
     try {
@@ -72,8 +75,8 @@ class CartProvider extends ChangeNotifier {
         variant,
         quantity: quantity,
       );
-      await _cartService.addItem(userId, item);
-      _items = await _cartService.getCartItems(userId);
+      await _cartService.addItem(uid, item);
+      _items = await _cartService.getCartItems(uid);
     } catch (error) {
       _error = 'Cần đăng nhập để thêm vào giỏ hàng';
     }
@@ -86,11 +89,13 @@ class CartProvider extends ChangeNotifier {
     String itemId,
     int quantity,
   ) async {
+    final uid = _currentUserId(userId);
+    _userId = uid;
     _error = null;
 
     try {
-      await _cartService.updateQuantity(userId, itemId, quantity);
-      _items = await _cartService.getCartItems(userId);
+      await _cartService.updateQuantity(uid, itemId, quantity);
+      _items = await _cartService.getCartItems(uid);
     } catch (error) {
       _error = 'Không cập nhật được số lượng';
     }
@@ -111,11 +116,13 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> removeItem(String userId, String itemId) async {
+    final uid = _currentUserId(userId);
+    _userId = uid;
     _error = null;
 
     try {
-      await _cartService.removeItem(userId, itemId);
-      _items = await _cartService.getCartItems(userId);
+      await _cartService.removeItem(uid, itemId);
+      _items = await _cartService.getCartItems(uid);
     } catch (error) {
       _error = 'Không xóa được sản phẩm';
     }
@@ -124,10 +131,12 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> clearCart(String userId) async {
+    final uid = _currentUserId(userId);
+    _userId = uid;
     _error = null;
 
     try {
-      await _cartService.clearCart(userId);
+      await _cartService.clearCart(uid);
       _items = <CartItem>[];
       _coupon = null;
     } catch (error) {
@@ -163,5 +172,11 @@ class CartProvider extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  String _currentUserId(String fallbackUserId) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUserId.trim();
   }
 }

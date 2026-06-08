@@ -52,6 +52,7 @@ class AuthService {
     await user.updateDisplayName(trimmedName);
 
     final userModel = UserModel(
+      id: user.uid,
       uid: user.uid,
       fullName: trimmedName,
       email: trimmedEmail,
@@ -62,18 +63,15 @@ class AuthService {
       isActive: true,
     );
 
-    await _firestore.collection('users').doc(user.uid).set({
-      'uid': user.uid,
-      'fullName': trimmedName,
-      'email': trimmedEmail,
-      'phone': trimmedPhone,
-      'avatarUrl': '',
-      'address': '',
-      'role': UserModel.roleUser,
-      'isActive': true,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _firestore.collection('users').doc(user.uid).set(
+          _newUserDocument(
+            uid: user.uid,
+            email: trimmedEmail,
+            fullName: trimmedName,
+            phone: trimmedPhone,
+            role: UserModel.roleUser,
+          ),
+        );
 
     return userModel;
   }
@@ -93,33 +91,51 @@ class AuthService {
 
       final fallbackName = user.displayName?.trim() ?? '';
       final fallbackEmail = user.email?.trim() ?? '';
-      await docRef.set({
-        'uid': uid,
-        'fullName': fallbackName.isEmpty ? fallbackEmail : fallbackName,
-        'email': fallbackEmail,
-        'phone': '',
-        'avatarUrl': '',
-        'address': '',
-        'role': UserModel.roleUser,
-        'isActive': true,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final role = _isConfiguredAdminUser(user)
+          ? UserModel.roleAdmin
+          : UserModel.roleUser;
+      await docRef.set(
+        _newUserDocument(
+          uid: uid,
+          email: fallbackEmail,
+          fullName: fallbackName.isEmpty ? fallbackEmail : fallbackName,
+          role: role,
+        ),
+      );
       final createdDoc = await docRef.get();
       return UserModel.fromFirestore(createdDoc);
     }
 
     final data = doc.data() ?? <String, dynamic>{};
-    if (data['role'] is! String || data['isActive'] is! bool) {
-      await docRef.set({
-        'uid': uid,
-        if (data['fullName'] is! String)
-          'fullName': user?.displayName?.trim() ?? '',
-        if (data['email'] is! String) 'email': user?.email?.trim() ?? '',
-        if (data['role'] is! String) 'role': UserModel.roleUser,
-        if (data['isActive'] is! bool) 'isActive': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+    if (user != null && user.uid == uid && _isConfiguredAdminUser(user)) {
+      if (_needsUserDocumentRepair(data, uid) ||
+          UserModel.normalizeRole(data['role']) != UserModel.roleAdmin) {
+        await docRef.set(
+          _repairUserDocument(
+            uid: uid,
+            user: user,
+            data: data,
+            role: UserModel.roleAdmin,
+          ),
+          SetOptions(merge: true),
+        );
+        final updatedDoc = await docRef.get();
+        return UserModel.fromFirestore(updatedDoc);
+      }
+
+      return _configuredAdminModel(user, data: data);
+    }
+
+    if (_needsUserDocumentRepair(data, uid)) {
+      await docRef.set(
+        _repairUserDocument(
+          uid: uid,
+          user: user,
+          data: data,
+          role: data['role'] is String ? null : UserModel.roleUser,
+        ),
+        SetOptions(merge: true),
+      );
       final updatedDoc = await docRef.get();
       return UserModel.fromFirestore(updatedDoc);
     }
@@ -135,6 +151,103 @@ class AuthService {
     final login = value.trim();
     if (login.toLowerCase() == adminLoginName) return adminEmail;
     return login;
+  }
+
+  bool _isConfiguredAdminUser(User user) {
+    return _isConfiguredAdminEmail(user.email);
+  }
+
+  bool _isConfiguredAdminEmail(String? value) {
+    return value?.trim().toLowerCase() == adminEmail;
+  }
+
+  Map<String, dynamic> _newUserDocument({
+    required String uid,
+    required String email,
+    required String fullName,
+    String phone = '',
+    required String role,
+  }) {
+    return {
+      'id': uid,
+      'uid': uid,
+      'email': email,
+      'fullName': fullName,
+      'phone': phone,
+      'address': '',
+      'avatarUrl': '',
+      'role': role,
+      'isActive': true,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  bool _needsUserDocumentRepair(Map<String, dynamic> data, String uid) {
+    return data['id'] is! String ||
+        (data['id'] as String).trim().isEmpty ||
+        (data['id'] as String).trim() != uid ||
+        data['uid'] is! String ||
+        (data['uid'] as String).trim().isEmpty ||
+        (data['uid'] as String).trim() != uid ||
+        data['email'] is! String ||
+        data['fullName'] is! String ||
+        data['phone'] is! String ||
+        data['address'] is! String ||
+        data['avatarUrl'] is! String ||
+        data['role'] is! String ||
+        data['isActive'] is! bool;
+  }
+
+  Map<String, dynamic> _repairUserDocument({
+    required String uid,
+    required User? user,
+    required Map<String, dynamic> data,
+    String? role,
+  }) {
+    return {
+      'id': uid,
+      'uid': uid,
+      if (data['email'] is! String) 'email': user?.email?.trim() ?? '',
+      if (data['fullName'] is! String)
+        'fullName': user?.displayName?.trim() ?? user?.email?.trim() ?? '',
+      if (data['phone'] is! String) 'phone': '',
+      if (data['address'] is! String) 'address': '',
+      if (data['avatarUrl'] is! String) 'avatarUrl': '',
+      if (role != null) 'role': role,
+      if (data['isActive'] is! bool) 'isActive': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  UserModel _configuredAdminModel(
+    User user, {
+    Map<String, dynamic>? data,
+  }) {
+    final fallbackName = user.displayName?.trim() ?? '';
+    final fallbackEmail = user.email?.trim() ?? adminEmail;
+    final modelData = <String, dynamic>{
+      'id': user.uid,
+      'uid': user.uid,
+      'fullName': fallbackName.isEmpty ? 'Admin' : fallbackName,
+      'email': fallbackEmail,
+      'phone': '',
+      'avatarUrl': '',
+      'address': '',
+      'isActive': true,
+    };
+
+    if (data != null) {
+      modelData.addAll(data);
+    }
+
+    modelData['id'] = user.uid;
+    modelData['uid'] = user.uid;
+    modelData['email'] = fallbackEmail;
+    modelData['role'] = UserModel.roleAdmin;
+    modelData['isActive'] = true;
+
+    return UserModel.fromMap(modelData, id: user.uid, uid: user.uid);
   }
 
   String errorMessage(Object error) {

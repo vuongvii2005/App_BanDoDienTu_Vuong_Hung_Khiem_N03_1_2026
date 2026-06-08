@@ -227,12 +227,7 @@ class ProductCard extends StatelessWidget {
     }
 
     if (isNowFavorite) {
-      _showMessage(
-        context,
-        'Đã thêm vào yêu thích',
-        actionLabel: 'Xem',
-        onAction: () => Navigator.pushNamed(context, AppRoutes.favorites),
-      );
+      _showMessage(context, 'Đã thêm vào yêu thích');
       return;
     }
 
@@ -245,10 +240,13 @@ class ProductCard extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 1400),
         action: actionLabel == null || onAction == null
             ? null
             : SnackBarAction(

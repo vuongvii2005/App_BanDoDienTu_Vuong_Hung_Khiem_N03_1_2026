@@ -1,24 +1,35 @@
-//thao tác collection orders
+// Thao tac collection orders.
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/order_model.dart';
 
 class OrderService {
-  OrderService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  OrderService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? firebaseAuth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
   CollectionReference<Map<String, dynamic>> get _orders =>
       _firestore.collection('orders');
 
   Future<String> createOrder(OrderModel order) async {
+    final uid = _currentUserId(fallbackUserId: order.userId);
+    if (uid.isEmpty) {
+      throw ArgumentError('User id cannot be empty for orders.');
+    }
+
     final docRef =
         order.id.trim().isEmpty ? _orders.doc() : _orders.doc(order.id);
 
     await docRef.set({
       ...order.toMap(),
       'id': docRef.id,
+      'userId': uid,
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -32,9 +43,10 @@ class OrderService {
   }
 
   Future<List<OrderModel>> getOrdersByUser(String userId) async {
-    if (userId.trim().isEmpty) return <OrderModel>[];
+    final uid = _currentUserId(fallbackUserId: userId);
+    if (uid.isEmpty) return <OrderModel>[];
 
-    final snapshot = await _orders.where('userId', isEqualTo: userId).get();
+    final snapshot = await _orders.where('userId', isEqualTo: uid).get();
     final orders = snapshot.docs.map(OrderModel.fromFirestore).toList();
     orders.sort((first, second) => second.createdAt.compareTo(first.createdAt));
     return orders;
@@ -82,5 +94,11 @@ class OrderService {
       'usedCount': FieldValue.increment(1),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  String _currentUserId({String fallbackUserId = ''}) {
+    final currentUid = _auth.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUserId.trim();
   }
 }

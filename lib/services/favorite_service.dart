@@ -18,10 +18,11 @@ class FavoriteService {
   }
 
   Future<List<FavoriteModel>> getFavorites(String uid) async {
-    _checkUid(uid);
-    await _ensureUserProfile(uid);
+    final userUid = _currentUid(fallbackUid: uid);
+    _checkUid(userUid);
+    await _ensureUserProfileBestEffort(userUid);
 
-    final snapshot = await _favorites(uid).get();
+    final snapshot = await _favorites(userUid).get();
     final favorites = snapshot.docs.map(FavoriteModel.fromFirestore).toList();
     favorites.sort((first, second) {
       final firstDate =
@@ -34,39 +35,43 @@ class FavoriteService {
   }
 
   Future<bool> isFavorite(String uid, String productId) async {
-    _checkUid(uid);
+    final userUid = _currentUid(fallbackUid: uid);
+    _checkUid(userUid);
     _checkProductId(productId);
-    await _ensureUserProfile(uid);
+    await _ensureUserProfileBestEffort(userUid);
 
-    final doc = await _favorites(uid).doc(productId).get();
+    final doc = await _favorites(userUid).doc(productId).get();
     return doc.exists;
   }
 
   Future<void> addFavorite(String uid, String productId) async {
-    _checkUid(uid);
+    final userUid = _currentUid(fallbackUid: uid);
+    _checkUid(userUid);
     _checkProductId(productId);
-    await _ensureUserProfile(uid);
+    await _ensureUserProfileBestEffort(userUid);
 
-    await _favorites(uid).doc(productId).set({
+    await _favorites(userUid).doc(productId).set({
       'productId': productId,
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
   Future<void> removeFavorite(String uid, String productId) async {
-    _checkUid(uid);
+    final userUid = _currentUid(fallbackUid: uid);
+    _checkUid(userUid);
     _checkProductId(productId);
-    await _ensureUserProfile(uid);
+    await _ensureUserProfileBestEffort(userUid);
 
-    await _favorites(uid).doc(productId).delete();
+    await _favorites(userUid).doc(productId).delete();
   }
 
   Future<bool> toggleFavorite(String uid, String productId) async {
-    _checkUid(uid);
+    final userUid = _currentUid(fallbackUid: uid);
+    _checkUid(userUid);
     _checkProductId(productId);
-    await _ensureUserProfile(uid);
+    await _ensureUserProfileBestEffort(userUid);
 
-    final docRef = _favorites(uid).doc(productId);
+    final docRef = _favorites(userUid).doc(productId);
     final doc = await docRef.get();
     if (doc.exists) {
       await docRef.delete();
@@ -92,6 +97,12 @@ class FavoriteService {
     }
   }
 
+  String _currentUid({String fallbackUid = ''}) {
+    final currentUid = _auth.currentUser?.uid.trim() ?? '';
+    if (currentUid.isNotEmpty) return currentUid;
+    return fallbackUid.trim();
+  }
+
   Future<void> _ensureUserProfile(String uid) async {
     final user = _auth.currentUser;
     if (user == null || user.uid != uid) return;
@@ -101,6 +112,7 @@ class FavoriteService {
     final data = doc.data() ?? <String, dynamic>{};
 
     if (doc.exists &&
+        data['id'] == uid &&
         data['role'] is String &&
         data['isActive'] is bool &&
         data['uid'] == uid) {
@@ -108,6 +120,7 @@ class FavoriteService {
     }
 
     await docRef.set({
+      'id': uid,
       'uid': uid,
       if (!doc.exists || data['fullName'] is! String)
         'fullName': user.displayName?.trim() ?? user.email?.trim() ?? '',
@@ -121,5 +134,13 @@ class FavoriteService {
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  Future<void> _ensureUserProfileBestEffort(String uid) async {
+    try {
+      await _ensureUserProfile(uid);
+    } on FirebaseException catch (error) {
+      if (error.code != 'permission-denied') rethrow;
+    }
   }
 }
