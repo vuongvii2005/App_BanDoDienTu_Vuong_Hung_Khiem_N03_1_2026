@@ -23,6 +23,29 @@ class CouponProvider extends ChangeNotifier {
   String? get error => _error;
   String? get adminError => _adminError;
 
+  List<CouponModel> availableCouponsFor(int subtotal) {
+    final available = _coupons
+        .where(
+          (coupon) =>
+              coupon.isAvailableFor(subtotal) &&
+              coupon.discountFor(subtotal) > 0,
+        )
+        .toList();
+
+    available.sort((first, second) {
+      final discountCompare =
+          second.discountFor(subtotal).compareTo(first.discountFor(subtotal));
+      if (discountCompare != 0) return discountCompare;
+      return first.code.compareTo(second.code);
+    });
+    return available;
+  }
+
+  CouponModel? bestCouponFor(int subtotal) {
+    final available = availableCouponsFor(subtotal);
+    return available.isEmpty ? null : available.first;
+  }
+
   Future<void> loadCoupons() async {
     _setLoading(true);
     _error = null;
@@ -115,8 +138,15 @@ class CouponProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
 
+    final normalizedCode = CouponModel.normalizeCode(code);
+    if (normalizedCode.isEmpty) {
+      _error = 'Vui long nhap ma giam gia';
+      _setLoading(false);
+      return null;
+    }
+
     try {
-      final coupon = await _couponService.getCouponByCode(code);
+      final coupon = await _couponService.getCouponByCode(normalizedCode);
       if (coupon == null) {
         _error = 'Ma giam gia khong ton tai';
         return null;

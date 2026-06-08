@@ -700,14 +700,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return buffer.toString();
   }
 
-  void _showComingSoon(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label đang được cập nhật'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  
 
   Future<void> _logout() async {
     await context.read<AuthProvider>().logout();

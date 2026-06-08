@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
 import '../models/address_model.dart';
+import '../models/coupon_model.dart';
 import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/coupon_provider.dart';
+import '../utils/formatters.dart';
 import '../utils/validators.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -23,6 +26,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _emailCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _couponCtrl = TextEditingController();
   String _city = 'TP. Hồ Chí Minh';
   late String _district;
   bool _filledFromUser = false;
@@ -862,6 +866,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.initState();
     // Khởi tạo quận/huyện mặc định theo tỉnh mặc định
     _district = _districtsByCity[_city]!.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CouponProvider>().loadCoupons();
+    });
   }
 
   @override
@@ -885,6 +893,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _emailCtrl.dispose();
     _addressCtrl.dispose();
     _noteCtrl.dispose();
+    _couponCtrl.dispose();
     super.dispose();
   }
 
@@ -892,6 +901,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
+    final coupon = context.watch<CouponProvider>();
 
     if (auth.isGuest) {
       return _messageScaffold(
@@ -996,6 +1006,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   maxLines: 3,
                 ),
               ]),
+              const SizedBox(height: 12),
+              _buildCouponCard(context, cart, coupon),
+              const SizedBox(height: 12),
+              _buildOrderSummary(cart),
               const SizedBox(height: 100),
             ],
           ),
@@ -1106,7 +1120,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           isExpanded: true,
           menuMaxHeight: 320,
           items: items.map((item) {
@@ -1121,6 +1135,298 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCouponCard(
+    BuildContext context,
+    CartProvider cart,
+    CouponProvider coupon,
+  ) {
+    final suggestions = coupon.availableCouponsFor(cart.subtotal).take(4);
+
+    return _buildCard([
+      const Row(
+        children: [
+          Icon(Icons.local_offer_outlined, color: AppTheme.primary, size: 20),
+          SizedBox(width: 8),
+          Text(
+            'Mã giảm giá',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _couponCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                hintText: 'Nhập mã',
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: coupon.isLoading
+                ? null
+                : () => _applyCouponCode(context, cart, coupon),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(88, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+            ),
+            child: Text(coupon.isLoading ? '...' : 'Áp dụng'),
+          ),
+        ],
+      ),
+      if (cart.coupon != null || coupon.error != null) ...[
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                coupon.error ??
+                    (cart.discount > 0
+                        ? 'Đã áp dụng mã ${cart.coupon!.code}'
+                        : 'Mã ${cart.coupon!.code} chưa đủ điều kiện'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: coupon.error == null && cart.discount > 0
+                      ? AppTheme.success
+                      : AppTheme.error,
+                ),
+              ),
+            ),
+            if (cart.coupon != null)
+              TextButton(
+                onPressed: () {
+                  cart.clearCoupon();
+                  coupon.clearError();
+                  _couponCtrl.clear();
+                },
+                child: const Text('Bỏ mã'),
+              ),
+          ],
+        ),
+      ],
+      if (coupon.isLoading && coupon.coupons.isEmpty) ...[
+        const SizedBox(height: 12),
+        const LinearProgressIndicator(minHeight: 2),
+      ] else if (suggestions.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        const Text(
+          'Gợi ý cho đơn hàng này',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.black,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...suggestions.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _couponSuggestion(context, cart, coupon, item),
+          ),
+        ),
+      ] else if (!coupon.isLoading && coupon.coupons.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        const Text(
+          'Chưa có mã phù hợp với giá trị đơn hàng này',
+          style: TextStyle(fontSize: 12, color: AppTheme.grey),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _couponSuggestion(
+    BuildContext context,
+    CartProvider cart,
+    CouponProvider couponProvider,
+    CouponModel coupon,
+  ) {
+    final discount = coupon.discountFor(cart.subtotal);
+    final selected = cart.coupon?.id == coupon.id && cart.discount > 0;
+
+    return InkWell(
+      onTap: selected
+          ? null
+          : () => _applySuggestedCoupon(
+                cart,
+                couponProvider,
+                coupon,
+                ScaffoldMessenger.of(context),
+              ),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.success.withValues(alpha: 0.08)
+              : AppTheme.background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? AppTheme.success
+                : AppTheme.primary.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.confirmation_number_outlined,
+                color: AppTheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    coupon.code,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    coupon.minOrder > 0
+                        ? 'Giảm ${Formatters.currency(discount)} - từ ${Formatters.currency(coupon.minOrder)}'
+                        : 'Giảm ${Formatters.currency(discount)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: AppTheme.grey),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            selected
+                ? const Icon(Icons.check_circle, color: AppTheme.success)
+                : const Icon(Icons.add_circle_outline, color: AppTheme.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderSummary(CartProvider cart) {
+    return _buildCard([
+      const Text(
+        'Tổng thanh toán',
+        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 12),
+      _priceRow('Tạm tính', Formatters.currency(cart.subtotal)),
+      if (cart.discount > 0)
+        _priceRow(
+          cart.discountLabel,
+          '-${Formatters.currency(cart.discount)}',
+          valueColor: AppTheme.success,
+        ),
+      _priceRow(
+        'Phí vận chuyển',
+        cart.shippingFee == 0
+            ? 'Miễn phí'
+            : Formatters.currency(cart.shippingFee),
+        valueColor: cart.shippingFee == 0 ? AppTheme.success : null,
+      ),
+      const Divider(height: 20),
+      _priceRow(
+        'Tổng cộng',
+        Formatters.currency(cart.total),
+        valueColor: AppTheme.primary,
+        isTotal: true,
+      ),
+    ]);
+  }
+
+  Widget _priceRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isTotal = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isTotal ? AppTheme.black : AppTheme.grey,
+              fontSize: isTotal ? 15 : 14,
+              fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 14,
+              fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+              color: valueColor ?? AppTheme.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyCouponCode(
+    BuildContext context,
+    CartProvider cart,
+    CouponProvider coupon,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final couponModel =
+        await coupon.applyCoupon(_couponCtrl.text, cart.subtotal);
+    if (!mounted) return;
+
+    if (couponModel == null) {
+      cart.clearCoupon();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(coupon.error ?? 'Không áp dụng được mã giảm giá'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    _applySuggestedCoupon(cart, coupon, couponModel, messenger);
+  }
+
+  void _applySuggestedCoupon(
+    CartProvider cart,
+    CouponProvider couponProvider,
+    CouponModel coupon,
+    ScaffoldMessengerState messenger,
+  ) {
+    cart.applyCoupon(coupon);
+    couponProvider.clearError();
+    _couponCtrl.text = coupon.code;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Đã áp dụng mã ${coupon.code}'),
+        backgroundColor: AppTheme.success,
+      ),
     );
   }
 
