@@ -41,10 +41,10 @@ class OrderProvider extends ChangeNotifier {
   Future<String?> placeOrder({
     required String userId,
     required List<CartItem> items,
-    required double subtotal,
-    required double discount,
-    required double shippingFee,
-    required double total,
+    required int subtotal,
+    required int discount,
+    required int shippingFee,
+    required int total,
     required String paymentMethod,
     required Map<String, String> shippingInfo,
   }) async {
@@ -65,13 +65,15 @@ class OrderProvider extends ChangeNotifier {
 
     try {
       final orderId = 'TS${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Build full address from shipping info
       final city = shippingInfo['city'] ?? '';
       final district = shippingInfo['district'] ?? '';
       final address = shippingInfo['address'] ?? '';
-      final shippingAddress = '$address, $district, $city'.replaceAll(RegExp(r', +'), ', ').replaceAll(RegExp(r'^, |, $'), '');
-      
+      final shippingAddress = '$address, $district, $city'
+          .replaceAll(RegExp(r', +'), ', ')
+          .replaceAll(RegExp(r'^, |, $'), '');
+
       final order = OrderModel(
         id: orderId,
         userId: userId,
@@ -88,9 +90,10 @@ class OrderProvider extends ChangeNotifier {
       );
 
       final savedId = await _orderService.createOrder(order);
+      final createdOrderId = savedId.trim().isEmpty ? order.id : savedId;
       await _cartService.clearCart(userId);
       _orders.insert(0, order);
-      return savedId;
+      return createdOrderId;
     } catch (error) {
       _error = 'Không tạo được đơn hàng';
       return null;
@@ -99,14 +102,43 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  OrderModel? getOrderById(String id) {
+  Future<OrderModel?> getOrderById(String orderId) async {
+    final id = orderId.trim();
+    if (id.isEmpty) return null;
+
+    final cachedOrder = getCachedOrderById(id);
+    if (cachedOrder != null) {
+      return cachedOrder;
+    }
+
+    try {
+      final order = await _orderService.getOrderById(id);
+      if (order == null) return null;
+
+      final existingIndex = _orders.indexWhere((item) => item.id == order.id);
+      if (existingIndex == -1) {
+        _orders.insert(0, order);
+      } else {
+        _orders[existingIndex] = order;
+      }
+
+      notifyListeners();
+      return order;
+    } catch (error) {
+      _error = 'Khong tai duoc chi tiet don hang';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  OrderModel? getCachedOrderById(String id) {
     for (final order in _orders) {
       if (order.id == id) return order;
     }
     return null;
   }
 
-  OrderModel? getById(String id) => getOrderById(id);
+  OrderModel? getById(String id) => getCachedOrderById(id);
 
   void _setLoading(bool value) {
     _isLoading = value;

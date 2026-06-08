@@ -5,11 +5,12 @@ class AppConstants {
 
   // Coupon
   static const String defaultCoupon = 'WELCOME10';
-  static const double discountPercent = 0.10;
+  static const int discountMin = 1000000;
+  static const int discountPercent = 10;
 
   // Shipping
-  static const double freeShippingMin = 500.0;
-  static const double shippingFee = 15.0;
+  static const int freeShippingMin = 500000;
+  static const int shippingFee = 30000;
 
   // Pagination
   static const int pageSize = 10;

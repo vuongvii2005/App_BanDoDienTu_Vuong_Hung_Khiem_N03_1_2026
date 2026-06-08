@@ -12,7 +12,7 @@ class CartItem {
   final String imageUrl;
   final String storage;
   final String color;
-  final double price;
+  final int price;
   final int quantity;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -69,14 +69,14 @@ class CartItem {
       imageUrl: _string(map['imageUrl']),
       storage: _string(map['storage'] ?? map['selectedStorage']),
       color: _string(map['color'] ?? map['selectedColor']),
-      price: _double(map['price']),
+      price: _moneyInt(map['price']),
       quantity: _int(map['quantity'], fallback: 1),
       createdAt: _date(map['createdAt']),
       updatedAt: _date(map['updatedAt']),
     );
   }
 
-  double get totalPrice => price * quantity;
+  int get totalPrice => price * quantity;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -115,11 +115,23 @@ class CartItem {
 
   static String _string(dynamic value) => value?.toString() ?? '';
 
-  static double _double(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
+  static int _moneyInt(dynamic value) {
+    final amount = _moneyAmount(value);
+    final sign = amount < 0 ? -1 : 1;
+    final absoluteAmount = amount.abs();
+
+    if (absoluteAmount == 0) return 0;
+    if (absoluteAmount >= 100000) return amount.round();
+    if (absoluteAmount >= 10000) return sign * (absoluteAmount * 1000).round();
+    return sign * (absoluteAmount * 25000).round();
+  }
+
+  static double _moneyAmount(dynamic value) {
     if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
+    final text = value?.toString().trim() ?? '';
+    final parsed = num.tryParse(text.replaceAll(',', ''));
+    if (parsed != null) return parsed.toDouble();
+    return double.tryParse(text.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
   }
 
   static int _int(dynamic value, {int fallback = 0}) {

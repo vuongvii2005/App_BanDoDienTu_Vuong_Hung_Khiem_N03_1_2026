@@ -11,6 +11,9 @@ class OrderSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedOrderId = orderId.trim();
+    final hasOrderId = normalizedOrderId.isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0FFF4),
       body: SafeArea(
@@ -74,7 +77,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '#$orderId',
+                          hasOrderId ? '#$normalizedOrderId' : '#',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -85,7 +88,9 @@ class OrderSuccessScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () {
-                            Clipboard.setData(ClipboardData(text: orderId));
+                            Clipboard.setData(
+                              ClipboardData(text: normalizedOrderId),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Đã sao chép mã đơn hàng'),
@@ -115,11 +120,13 @@ class OrderSuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.orderDetail,
-                  arguments: orderId,
-                ),
+                onPressed: hasOrderId
+                    ? () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.orderDetail,
+                          arguments: normalizedOrderId,
+                        )
+                    : null,
                 child: const Text('Xem chi tiết đơn hàng'),
               ),
               const SizedBox(height: 12),

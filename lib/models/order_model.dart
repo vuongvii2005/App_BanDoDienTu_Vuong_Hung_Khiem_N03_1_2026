@@ -13,7 +13,7 @@ class OrderItem {
   final String imageUrl;
   final String storage;
   final String color;
-  final double price;
+  final int price;
   final int quantity;
 
   const OrderItem({
@@ -51,7 +51,7 @@ class OrderItem {
       imageUrl: _string(map['imageUrl']),
       storage: _string(map['storage'] ?? map['selectedStorage']),
       color: _string(map['color'] ?? map['selectedColor']),
-      price: _double(map['price']),
+      price: _moneyInt(map['price']),
       quantity: _int(map['quantity'], fallback: 1),
     );
   }
@@ -72,10 +72,10 @@ class OrderModel {
   final String id;
   final String userId;
   final List<OrderItem> items;
-  final double subtotal;
-  final double discount;
-  final double shippingFee;
-  final double total;
+  final int subtotal;
+  final int discount;
+  final int shippingFee;
+  final int total;
   final String paymentMethod;
   final String shippingAddress;
   final String phone;
@@ -118,10 +118,10 @@ class OrderModel {
       id: id ?? _string(map['id']),
       userId: _string(map['userId']),
       items: items,
-      subtotal: _double(map['subtotal']),
-      discount: _double(map['discount']),
-      shippingFee: _double(map['shippingFee']),
-      total: _double(map['total']),
+      subtotal: _moneyInt(map['subtotal']),
+      discount: _moneyInt(map['discount']),
+      shippingFee: _moneyInt(map['shippingFee']),
+      total: _moneyInt(map['total']),
       paymentMethod: _string(map['paymentMethod']),
       shippingAddress: _string(map['shippingAddress']),
       phone: _string(map['phone']),
@@ -190,11 +190,23 @@ typedef Order = OrderModel;
 
 String _string(dynamic value) => value?.toString() ?? '';
 
-double _double(dynamic value) {
-  if (value is double) return value;
-  if (value is int) return value.toDouble();
+int _moneyInt(dynamic value) {
+  final amount = _moneyAmount(value);
+  final sign = amount < 0 ? -1 : 1;
+  final absoluteAmount = amount.abs();
+
+  if (absoluteAmount == 0) return 0;
+  if (absoluteAmount >= 100000) return amount.round();
+  if (absoluteAmount >= 10000) return sign * (absoluteAmount * 1000).round();
+  return sign * (absoluteAmount * 25000).round();
+}
+
+double _moneyAmount(dynamic value) {
   if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '') ?? 0;
+  final text = value?.toString().trim() ?? '';
+  final parsed = num.tryParse(text.replaceAll(',', ''));
+  if (parsed != null) return parsed.toDouble();
+  return double.tryParse(text.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
 }
 
 int _int(dynamic value, {int fallback = 0}) {
