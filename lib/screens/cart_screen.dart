@@ -179,12 +179,13 @@ class _CartScreenState extends State<CartScreen> {
       child: Row(
         children: [
           Checkbox(
-            value: true,
+            value: cart.isItemSelected(item.id),
             activeColor: AppTheme.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
             ),
-            onChanged: (_) {},
+            onChanged: (selected) =>
+                cart.setItemSelected(item.id, selected ?? false),
           ),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -403,8 +404,10 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 14),
           ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.checkout),
-            child: Text('Thanh toán (${cart.itemCount})'),
+            onPressed: cart.hasSelectedItems
+                ? () => Navigator.pushNamed(context, AppRoutes.checkout)
+                : null,
+            child: Text('Thanh toán (${cart.selectedItemCount})'),
           ),
         ],
       ),

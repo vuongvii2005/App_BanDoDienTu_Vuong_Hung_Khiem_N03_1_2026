@@ -931,6 +931,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
     }
 
+    if (!cart.hasSelectedItems) {
+      return _messageScaffold(
+        title: 'Thông tin giao hàng',
+        message: 'Chưa chọn sản phẩm để thanh toán',
+        button: 'Quay lại',
+        onPressed: () => Navigator.pop(context),
+      );
+    }
+
     final districtOptions = _districtsByCity[_city] ?? const <String>[];
     final cityOptions = _districtsByCity.keys.toList();
 

@@ -108,6 +108,23 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
       );
     }
 
+    if (!cart.hasSelectedItems) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(title: const Text('Phương thức thanh toán')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Chưa chọn sản phẩm để thanh toán',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
     return WillPopScope(
       onWillPop: () async {
         if (_selected != 'COD') {
@@ -494,6 +511,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
     Map<String, String> shippingInfo,
     AuthProvider auth,
   ) {
+    final canPay = !_isLoading && cart.hasSelectedItems;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       decoration: BoxDecoration(
@@ -533,14 +552,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => _processPayment(
+                onPressed: canPay
+                    ? () => _processPayment(
                           context,
                           cart,
                           shippingInfo,
                           auth,
-                        ),
+                        )
+                    : null,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -584,6 +603,19 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final orderProvider = context.read<OrderProvider>();
+    final selectedItems = cart.selectedItems;
+    final selectedItemIds =
+        selectedItems.map((item) => item.id).toList(growable: false);
+
+    if (selectedItems.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Chưa chọn sản phẩm để thanh toán'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     // Validate payment method details
     if (_selected == 'CARD') {
@@ -615,7 +647,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
           paymentMethod: _selected,
           shippingInfo: shippingInfo,
           userId: auth.currentUser!.uid,
-          items: cart.items,
+          items: selectedItems,
           total: cart.total,
           subtotal: cart.subtotal,
           discount: cart.discount,
@@ -638,7 +670,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
         }
 
         // Clear cart
-        cart.clearLocal();
+        cart.removeItemsLocal(selectedItemIds);
 
         // Navigate to success screen
         navigator.pushReplacementNamed(

@@ -95,6 +95,20 @@ class CartService {
     await _items(uid).doc(itemId).delete();
   }
 
+  Future<void> removeItems(String userId, Iterable<String> itemIds) async {
+    final uid = _currentUserId(fallbackUserId: userId);
+    _checkUserId(uid);
+
+    final ids = itemIds.where((itemId) => itemId.trim().isNotEmpty).toSet();
+    if (ids.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (final itemId in ids) {
+      batch.delete(_items(uid).doc(itemId));
+    }
+    await batch.commit();
+  }
+
   Future<void> clearCart(String userId) async {
     final uid = _currentUserId(fallbackUserId: userId);
     _checkUserId(uid);

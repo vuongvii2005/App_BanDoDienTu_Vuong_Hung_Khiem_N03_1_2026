@@ -67,6 +67,7 @@ class OrderConfirmScreen extends StatelessWidget {
     final paymentMethod = args['paymentMethod'] ?? 'COD';
     final shippingInfo =
         args['shippingInfo'] as Map<String, String>? ?? <String, String>{};
+    final selectedItems = cart.selectedItems;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -92,187 +93,200 @@ class OrderConfirmScreen extends StatelessWidget {
                         style: TextStyle(color: AppTheme.grey),
                       ),
                     )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildSection(
-                            title: 'Thông tin giao hàng',
-                            action: 'Sửa',
-                            onAction: () => Navigator.pop(context),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    shippingInfo['fullName'] ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    shippingInfo['address'] ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppTheme.grey,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    shippingInfo['phone'] ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppTheme.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                  : selectedItems.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Chưa chọn sản phẩm để thanh toán',
+                            style: TextStyle(color: AppTheme.grey),
                           ),
-                          const SizedBox(height: 12),
-                          _buildSection(
-                            title: 'Phương thức thanh toán',
-                            action: 'Sửa',
-                            onAction: () => Navigator.pop(context),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: _getPaymentColor(paymentMethod)
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        _getPaymentIcon(paymentMethod),
-                                        color: _getPaymentColor(paymentMethod),
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _paymentLabel(paymentMethod),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildSection(
-                            title: 'Sản phẩm (${cart.items.length})',
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(14),
-                              itemCount: cart.items.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 16),
-                              itemBuilder: (_, i) {
-                                final item = cart.items[i];
-                                return Row(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: CachedNetworkImage(
-                                        imageUrl: item.imageUrl,
-                                        width: 56,
-                                        height: 56,
-                                        fit: BoxFit.cover,
-                                        placeholder: (_, __) => Container(
-                                          width: 56,
-                                          height: 56,
-                                          color: AppTheme.greyLight,
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _buildSection(
+                                title: 'Thông tin giao hàng',
+                                action: 'Sửa',
+                                onAction: () => Navigator.pop(context),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        shippingInfo['fullName'] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        errorWidget: (_, __, ___) => Container(
-                                          width: 56,
-                                          height: 56,
-                                          color: AppTheme.greyLight,
-                                          child: const Icon(
-                                            Icons.image_outlined,
-                                            color: AppTheme.grey,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        shippingInfo['address'] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppTheme.grey,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        shippingInfo['phone'] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppTheme.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                title: 'Phương thức thanh toán',
+                                action: 'Sửa',
+                                onAction: () => Navigator.pop(context),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: _getPaymentColor(paymentMethod)
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Center(
+                                          child: Icon(
+                                            _getPaymentIcon(paymentMethod),
+                                            color:
+                                                _getPaymentColor(paymentMethod),
+                                            size: 20,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.productName,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          _paymentLabel(paymentMethod),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                title: 'Sản phẩm (${selectedItems.length})',
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(14),
+                                  itemCount: selectedItems.length,
+                                  separatorBuilder: (_, __) =>
+                                      const Divider(height: 16),
+                                  itemBuilder: (_, i) {
+                                    final item = selectedItems[i];
+                                    return Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: CachedNetworkImage(
+                                            imageUrl: item.imageUrl,
+                                            width: 56,
+                                            height: 56,
+                                            fit: BoxFit.cover,
+                                            placeholder: (_, __) => Container(
+                                              width: 56,
+                                              height: 56,
+                                              color: AppTheme.greyLight,
                                             ),
-                                          ),
-                                          if (item.selectedStorage.isNotEmpty)
-                                            Text(
-                                              item.selectedStorage,
-                                              style: const TextStyle(
-                                                fontSize: 11,
+                                            errorWidget: (_, __, ___) =>
+                                                Container(
+                                              width: 56,
+                                              height: 56,
+                                              color: AppTheme.greyLight,
+                                              child: const Icon(
+                                                Icons.image_outlined,
                                                 color: AppTheme.grey,
                                               ),
                                             ),
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          Formatters.currency(item.price),
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                        Text(
-                                          'x${item.quantity}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppTheme.grey,
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item.productName,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              if (item
+                                                  .selectedStorage.isNotEmpty)
+                                                Text(
+                                                  item.selectedStorage,
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: AppTheme.grey,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              Formatters.currency(item.price),
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            Text(
+                                              'x${item.quantity}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppTheme.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _priceSummary(cart),
+                              if (orderProvider.error != null) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  orderProvider.error!,
+                                  style: const TextStyle(color: AppTheme.error),
+                                ),
+                              ],
+                              const SizedBox(height: 100),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          _priceSummary(cart),
-                          if (orderProvider.error != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              orderProvider.error!,
-                              style: const TextStyle(color: AppTheme.error),
-                            ),
-                          ],
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
+                        ),
       bottomNavigationBar: _buildBottom(
         context,
         auth,
@@ -293,9 +307,12 @@ class OrderConfirmScreen extends StatelessWidget {
     Map<String, String> shippingInfo,
   ) {
     final uid = auth.currentUser?.uid;
+    final selectedItems = cart.selectedItems;
+    final selectedItemIds =
+        selectedItems.map((item) => item.id).toList(growable: false);
     final canOrder = auth.canBuy &&
         uid != null &&
-        cart.items.isNotEmpty &&
+        selectedItems.isNotEmpty &&
         !orderProvider.isLoading;
 
     return Container(
@@ -319,7 +336,7 @@ class OrderConfirmScreen extends StatelessWidget {
                     final orderId =
                         await context.read<OrderProvider>().placeOrder(
                               userId: uid,
-                              items: cart.items,
+                              items: selectedItems,
                               subtotal: cart.subtotal,
                               discount: cart.discount,
                               shippingFee: cart.shippingFee,
@@ -330,7 +347,9 @@ class OrderConfirmScreen extends StatelessWidget {
                             );
 
                     if (orderId == null || !context.mounted) return;
-                    context.read<CartProvider>().clearLocal();
+                    context.read<CartProvider>().removeItemsLocal(
+                          selectedItemIds,
+                        );
 
                     // FIX: chỉ truyền orderId (String) thay vì Map
                     Navigator.pushNamedAndRemoveUntil(

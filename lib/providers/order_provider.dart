@@ -118,7 +118,10 @@ class OrderProvider extends ChangeNotifier {
 
       final savedId = await _orderService.createOrder(order);
       final createdOrderId = savedId.trim().isEmpty ? order.id : savedId;
-      await _cartService.clearCart(uid);
+      await _cartService.removeItems(
+        uid,
+        items.map((item) => item.id),
+      );
       _orders.insert(0, order);
       return createdOrderId;
     } catch (error) {
