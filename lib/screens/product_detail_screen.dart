@@ -8,8 +8,11 @@ import '../models/product_model.dart';
 import '../models/product_variant_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/product_provider.dart';
+import '../providers/review_provider.dart';
 import '../utils/formatters.dart';
+import '../widgets/product/review_list.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -21,10 +24,13 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  final TextEditingController _reviewController = TextEditingController();
   int _quantity = 1;
   int _selectedImageIndex = 0;
   String? _selectedStorage;
   String? _selectedColor;
+  double _reviewRating = 5;
+  String? _loadedFavoritesUserId;
 
   @override
   void initState() {
@@ -32,8 +38,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<ProductProvider>().loadVariants(widget.productId);
+        context.read<ReviewProvider>().loadReviews(widget.productId);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 
   @override
@@ -44,6 +57,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final isLoadingVariants = provider.isLoadingVariants(widget.productId);
     final selectedVariant = _syncAndFindSelectedVariant(variants);
     final cart = context.watch<CartProvider>();
+    final auth = context.watch<AuthProvider>();
+    final favorites = context.watch<FavoriteProvider>();
+    final reviews = context.watch<ReviewProvider>();
+    _loadFavoritesForCurrentUser(auth, favorites);
 
     if (provider.isLoading) {
       return const Scaffold(
@@ -64,12 +81,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _selectedImageIndex >= productImages.length ? 0 : _selectedImageIndex;
     final selectedImageUrl =
         productImages.isEmpty ? '' : productImages[selectedImageIndex];
+    final isFavorite = auth.canBuy &&
+        favorites.userId == auth.currentUser?.uid &&
+        favorites.isFavorite(product.id);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         actions: [
-          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
+          IconButton(
+            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+            color: isFavorite ? AppTheme.favorite : null,
+            onPressed: favorites.isToggling(product.id)
+                ? null
+                : () => _toggleFavorite(
+                      product,
+                      auth,
+                      favorites,
+                      shouldFavorite: !isFavorite,
+                    ),
+          ),
           Stack(
             children: [
               IconButton(
@@ -193,6 +224,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 1.6,
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _buildReviewsSection(product, auth, reviews),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -551,6 +584,145 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  Widget _buildReviewsSection(
+    Product product,
+    AuthProvider auth,
+    ReviewProvider reviewProvider,
+  ) {
+    final productReviews = reviewProvider.getReviews(product.id);
+    final isLoadingReviews = reviewProvider.isLoading(product.id);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Đánh giá sản phẩm',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+            IconButton(
+              onPressed: isLoadingReviews
+                  ? null
+                  : () => context
+                      .read<ReviewProvider>()
+                      .loadReviews(product.id, force: true),
+              icon: const Icon(Icons.refresh, size: 20),
+              color: AppTheme.grey,
+              tooltip: 'Tải lại đánh giá',
+            ),
+          ],
+        ),
+        if (isLoadingReviews)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(color: AppTheme.primary),
+          )
+        else
+          ReviewList(reviews: productReviews),
+        const SizedBox(height: 14),
+        _buildReviewComposer(product, auth, reviewProvider),
+      ],
+    );
+  }
+
+  Widget _buildReviewComposer(
+    Product product,
+    AuthProvider auth,
+    ReviewProvider reviewProvider,
+  ) {
+    if (auth.isGuest || auth.currentUser == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+          icon: const Icon(Icons.login, size: 18),
+          label: const Text('Đăng nhập để đánh giá'),
+        ),
+      );
+    }
+
+    if (!auth.canBuy) {
+      return const Text(
+        'Tài khoản này không dùng để đánh giá sản phẩm',
+        style: TextStyle(color: AppTheme.grey, fontSize: 13),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.greyLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Đánh giá của bạn',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          _buildRatingInput(),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _reviewController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 500,
+            decoration: const InputDecoration(
+              hintText: 'Chia sẻ cảm nhận về sản phẩm',
+              border: OutlineInputBorder(),
+              counterText: '',
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: reviewProvider.isSubmitting
+                  ? null
+                  : () => _submitReview(product, auth, reviewProvider),
+              icon: reviewProvider.isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.rate_review_outlined, size: 18),
+              label: const Text('Gửi đánh giá'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingInput() {
+    return Row(
+      children: List.generate(5, (index) {
+        final value = index + 1.0;
+        return IconButton(
+          onPressed: () => setState(() => _reviewRating = value),
+          icon: Icon(
+            _reviewRating >= value ? Icons.star : Icons.star_border,
+            color: AppTheme.star,
+          ),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+          tooltip: '$value sao',
+        );
+      }),
+    );
+  }
+
   Future<void> _addToCart(
     Product product,
     ProductVariant selectedVariant,
@@ -575,6 +747,78 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     if (!mounted) return;
     Navigator.pushNamed(context, AppRoutes.cart);
+  }
+
+  Future<void> _toggleFavorite(
+    Product product,
+    AuthProvider auth,
+    FavoriteProvider favorites, {
+    required bool shouldFavorite,
+  }) async {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || auth.isGuest) {
+      Navigator.pushNamed(context, AppRoutes.login);
+      return;
+    }
+
+    if (!auth.canBuy) {
+      _showMessage('Tài khoản này không dùng để lưu yêu thích');
+      return;
+    }
+
+    final isNowFavorite = await favorites.setFavorite(
+      uid,
+      product.id,
+      shouldFavorite: shouldFavorite,
+    );
+    if (!mounted) return;
+
+    if (favorites.error != null) {
+      _showMessage(favorites.error!);
+      return;
+    }
+
+    if (isNowFavorite) {
+      _showMessage(
+        'Đã thêm vào yêu thích',
+        actionLabel: 'Xem',
+        onAction: () => Navigator.pushNamed(context, AppRoutes.favorites),
+      );
+      return;
+    }
+
+    _showMessage('Đã bỏ yêu thích');
+  }
+
+  Future<void> _submitReview(
+    Product product,
+    AuthProvider auth,
+    ReviewProvider reviewProvider,
+  ) async {
+    final comment = _reviewController.text.trim();
+    if (comment.isEmpty) {
+      _showMessage('Vui lòng nhập nội dung đánh giá');
+      return;
+    }
+
+    final userName = _reviewUserName(auth);
+    final success = await reviewProvider.saveReview(
+      userId: auth.currentUser!.uid,
+      userName: userName,
+      productId: product.id,
+      rating: _reviewRating,
+      comment: comment,
+    );
+    if (!mounted) return;
+
+    if (success) {
+      _reviewController.clear();
+      setState(() => _reviewRating = 5);
+      _showMessage('Đã lưu đánh giá');
+      return;
+    }
+
+    _showMessage(reviewProvider.error ?? 'Không lưu được đánh giá');
   }
 
   ProductVariant? _syncAndFindSelectedVariant(List<ProductVariant> variants) {
@@ -656,11 +900,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  void _showMessage(String message) {
+  String _reviewUserName(AuthProvider auth) {
+    final fullName = auth.userModel?.fullName.trim() ?? '';
+    if (fullName.isNotEmpty) return fullName;
+
+    final email = auth.currentUser?.email?.trim() ?? '';
+    if (email.isNotEmpty) return email;
+
+    return 'Khách hàng';
+  }
+
+  void _loadFavoritesForCurrentUser(
+    AuthProvider auth,
+    FavoriteProvider favorites,
+  ) {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || !auth.canBuy) {
+      _loadedFavoritesUserId = null;
+      return;
+    }
+
+    if (_loadedFavoritesUserId == uid || favorites.isLoading) return;
+
+    _loadedFavoritesUserId = uid;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<FavoriteProvider>().loadFavorites(uid);
+      }
+    });
+  }
+
+  void _showMessage(
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
+        action: actionLabel == null || onAction == null
+            ? null
+            : SnackBarAction(
+                label: actionLabel,
+                onPressed: onAction,
+              ),
       ),
     );
   }

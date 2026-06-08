@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
+import '../models/address_model.dart';
+import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../utils/validators.dart';
@@ -1127,18 +1129,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       color: AppTheme.white,
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (!_formKey.currentState!.validate()) return;
-          Navigator.pushNamed(
-            context,
+          final auth = context.read<AuthProvider>();
+          final addressProvider = context.read<AddressProvider>();
+          final navigator = Navigator.of(context);
+          final detail = _addressCtrl.text.trim();
+          final shippingInfo = {
+            'fullName': _nameCtrl.text.trim(),
+            'email': _emailCtrl.text.trim(),
+            'phone': _phoneCtrl.text.trim(),
+            'address': '$detail, $_district, $_city',
+            'city': _city,
+            'district': _district,
+            'ward': '',
+            'detail': detail,
+            'note': _noteCtrl.text.trim(),
+          };
+
+          final userId = auth.currentUser?.uid ?? '';
+          if (userId.isNotEmpty && auth.isUser) {
+            await addressProvider.saveAddress(
+              userId,
+              AddressModel(
+                id: '',
+                receiverName: shippingInfo['fullName'] ?? '',
+                phone: shippingInfo['phone'] ?? '',
+                city: _city,
+                district: _district,
+                ward: '',
+                detail: detail,
+                isDefault: true,
+              ),
+            );
+            if (!mounted) return;
+          }
+
+          navigator.pushNamed(
             AppRoutes.paymentMethod,
-            arguments: {
-              'fullName': _nameCtrl.text.trim(),
-              'email': _emailCtrl.text.trim(),
-              'phone': _phoneCtrl.text.trim(),
-              'address': '${_addressCtrl.text.trim()}, $_district, $_city',
-              'note': _noteCtrl.text.trim(),
-            },
+            arguments: shippingInfo,
           );
         },
         child: const Text('Tiếp tục'),

@@ -12,8 +12,15 @@ service cloud.firestore {
 
     function userRole(uid) {
       return signedIn() && userDocExists(uid)
-          ? get(/databases/$(database)/documents/users/$(uid)).data.role
+          ? (get(/databases/$(database)/documents/users/$(uid)).data.role is string
+              ? get(/databases/$(database)/documents/users/$(uid)).data.role
+              : 'user')
           : 'guest';
+    }
+
+    function userActive(uid) {
+      return signedIn() && userDocExists(uid)
+          && get(/databases/$(database)/documents/users/$(uid)).data.isActive != false;
     }
 
     function isOwner(uid) {
@@ -21,11 +28,15 @@ service cloud.firestore {
     }
 
     function isUser() {
-      return signedIn() && userRole(request.auth.uid) == 'user';
+      return signedIn()
+        && userActive(request.auth.uid)
+        && userRole(request.auth.uid) == 'user';
     }
 
     function isAdmin() {
-      return signedIn() && userRole(request.auth.uid) == 'admin';
+      return signedIn()
+        && userActive(request.auth.uid)
+        && userRole(request.auth.uid) == 'admin';
     }
 
     match /categories/{categoryId} {
@@ -47,13 +58,42 @@ service cloud.firestore {
     match /users/{uid} {
       allow create: if isOwner(uid)
         && request.resource.data.role == 'user'
+        && request.resource.data.isActive == true
         && request.resource.data.uid == uid;
       allow read: if isOwner(uid) || isAdmin();
       allow update: if isAdmin()
         || (isOwner(uid)
           && request.resource.data.uid == resource.data.uid
-          && request.resource.data.role == resource.data.role);
+          && (request.resource.data.role == resource.data.role
+            || (!(resource.data.role is string)
+              && request.resource.data.role == 'user'))
+          && (request.resource.data.isActive == resource.data.isActive
+            || (!(resource.data.isActive is bool)
+              && request.resource.data.isActive == true)));
       allow delete: if isAdmin();
+
+      match /addresses/{addressId} {
+        allow read: if isAdmin() || (isOwner(uid) && isUser());
+        allow create, update: if isAdmin()
+          || (isOwner(uid)
+            && isUser()
+            && request.resource.data.receiverName is string
+            && request.resource.data.phone is string
+            && request.resource.data.city is string
+            && request.resource.data.district is string
+            && request.resource.data.detail is string
+            && request.resource.data.isDefault is bool);
+        allow delete: if isAdmin() || (isOwner(uid) && isUser());
+      }
+
+      match /favorites/{productId} {
+        allow read: if isAdmin() || (isOwner(uid) && isUser());
+        allow create, update: if isAdmin()
+          || (isOwner(uid)
+            && isUser()
+            && request.resource.data.productId == productId);
+        allow delete: if isAdmin() || (isOwner(uid) && isUser());
+      }
     }
 
     match /carts/{uid} {
@@ -70,6 +110,45 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isUser() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read: if resource.data.isActive == true || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isUser()
+          && resource.data.isActive == true
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['usedCount', 'updatedAt'])
+          && request.resource.data.usedCount == resource.data.usedCount + 1);
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isUser()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.productId is string
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() > 0
+        && request.resource.data.comment.size() <= 500
+        && request.resource.data.images is list;
+      allow update: if isAdmin()
+        || (isUser()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.productId == resource.data.productId
+          && request.resource.data.rating is number
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.comment is string
+          && request.resource.data.comment.size() > 0
+          && request.resource.data.comment.size() <= 500
+          && request.resource.data.images is list);
+      allow delete: if isAdmin()
+        || (isUser() && resource.data.userId == request.auth.uid);
     }
 
     match /{document=**} {

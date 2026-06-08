@@ -45,6 +45,7 @@ class OrderProvider extends ChangeNotifier {
     required int discount,
     required int shippingFee,
     required int total,
+    String couponCode = '',
     required String paymentMethod,
     required Map<String, String> shippingInfo,
   }) async {
@@ -69,10 +70,12 @@ class OrderProvider extends ChangeNotifier {
       // Build full address from shipping info
       final city = shippingInfo['city'] ?? '';
       final district = shippingInfo['district'] ?? '';
-      final address = shippingInfo['address'] ?? '';
-      final shippingAddress = '$address, $district, $city'
-          .replaceAll(RegExp(r', +'), ', ')
-          .replaceAll(RegExp(r'^, |, $'), '');
+      final detail = shippingInfo['detail'] ?? '';
+      final legacyAddress = shippingInfo['address'] ?? '';
+      final shippingAddress =
+          (detail.isNotEmpty ? '$detail, $district, $city' : legacyAddress)
+              .replaceAll(RegExp(r', +'), ', ')
+              .replaceAll(RegExp(r'^, |, $'), '');
 
       final order = OrderModel(
         id: orderId,
@@ -82,6 +85,7 @@ class OrderProvider extends ChangeNotifier {
         discount: discount,
         shippingFee: shippingFee,
         total: total,
+        couponCode: couponCode,
         paymentMethod: paymentMethod,
         shippingAddress: shippingAddress,
         phone: shippingInfo['phone'] ?? '',

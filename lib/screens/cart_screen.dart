@@ -6,6 +6,7 @@ import '../config/app_routes.dart';
 import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/coupon_provider.dart';
 import '../utils/formatters.dart';
 
 class CartScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
+    final coupon = context.watch<CouponProvider>();
     final uid = auth.currentUser?.uid;
 
     if (uid != null && auth.canBuy && cart.userId != uid && !cart.isLoading) {
@@ -81,7 +83,7 @@ class _CartScreenState extends State<CartScreen> {
                                     _buildCartItem(context, cart, uid, i),
                               ),
                             ),
-                            _buildSummary(context, cart),
+                            _buildSummary(context, cart, coupon),
                           ],
                         ),
     );
@@ -290,7 +292,11 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildSummary(BuildContext context, CartProvider cart) {
+  Widget _buildSummary(
+    BuildContext context,
+    CartProvider cart,
+    CouponProvider coupon,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       decoration: const BoxDecoration(
@@ -321,20 +327,52 @@ class _CartScreenState extends State<CartScreen> {
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: coupon.isLoading
+                    ? null
+                    : () => _applyCoupon(context, cart, coupon),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(80, 44),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                child: const Text('Áp dụng'),
+                child: Text(coupon.isLoading ? '...' : 'Áp dụng'),
               ),
             ],
           ),
+          if (cart.coupon != null || coupon.error != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    coupon.error ??
+                        (cart.discount > 0
+                            ? 'Đã áp dụng mã ${cart.coupon!.code}'
+                            : 'Mã ${cart.coupon!.code} chưa đủ điều kiện'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: coupon.error == null && cart.discount > 0
+                          ? AppTheme.success
+                          : AppTheme.error,
+                    ),
+                  ),
+                ),
+                if (cart.coupon != null)
+                  TextButton(
+                    onPressed: () {
+                      cart.clearCoupon();
+                      coupon.clearError();
+                      _couponCtrl.clear();
+                    },
+                    child: const Text('Bỏ mã'),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           _priceRow('Tạm tính', Formatters.currency(cart.subtotal)),
           if (cart.discount > 0)
             _priceRow(
-              'Giảm giá (WELCOME10)',
+              cart.discountLabel,
               '-${Formatters.currency(cart.discount)}',
               valueColor: AppTheme.error,
             ),
@@ -392,6 +430,36 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _applyCoupon(
+    BuildContext context,
+    CartProvider cart,
+    CouponProvider coupon,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final couponModel =
+        await coupon.applyCoupon(_couponCtrl.text, cart.subtotal);
+    if (!mounted) return;
+
+    if (couponModel == null) {
+      cart.clearCoupon();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(coupon.error ?? 'Không áp dụng được mã giảm giá'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    cart.applyCoupon(couponModel);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Đã áp dụng mã ${couponModel.code}'),
+        backgroundColor: AppTheme.success,
       ),
     );
   }

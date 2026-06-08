@@ -324,6 +324,7 @@ class OrderConfirmScreen extends StatelessWidget {
                               discount: cart.discount,
                               shippingFee: cart.shippingFee,
                               total: cart.total,
+                              couponCode: cart.couponCode,
                               paymentMethod: paymentMethod,
                               shippingInfo: shippingInfo,
                             );
@@ -392,7 +393,7 @@ class OrderConfirmScreen extends StatelessWidget {
           if (cart.discount > 0) ...[
             const SizedBox(height: 8),
             _priceRow(
-              'Giảm giá',
+              cart.discountLabel,
               '-${Formatters.currency(cart.discount)}',
               color: AppTheme.success,
             ),

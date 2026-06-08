@@ -2,6 +2,7 @@
 // Quản lý style chung như AppBar, Button, Card, Input.
 // Giúp giao diện đồng bộ toàn app.
 import 'package:flutter/material.dart';
+
 class AppTheme {
   static const Color primary = Color(0xFFFF6B35);
   static const Color primaryDark = Color(0xFFE55A25);
@@ -13,6 +14,7 @@ class AppTheme {
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFF9800);
   static const Color error = Color(0xFFF44336);
+  static const Color favorite = Color(0xFFE91E63);
   static const Color star = Color(0xFFFFC107);
 
   static ThemeData get theme => ThemeData(

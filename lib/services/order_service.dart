@@ -22,6 +22,12 @@ class OrderService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
+    try {
+      await _incrementCouponUsedCount(order.couponCode);
+    } catch (_) {
+      // Coupon usage count is best-effort; order creation should not fail here.
+    }
+
     return docRef.id;
   }
 
@@ -49,6 +55,24 @@ class OrderService {
 
     await _orders.doc(orderId).update({
       'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> _incrementCouponUsedCount(String couponCode) async {
+    final code = couponCode.trim().toUpperCase();
+    if (code.isEmpty) return;
+
+    final snapshot = await _firestore
+        .collection('coupons')
+        .where('code', isEqualTo: code)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isEmpty) return;
+
+    await snapshot.docs.first.reference.update({
+      'usedCount': FieldValue.increment(1),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

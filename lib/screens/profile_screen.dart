@@ -6,6 +6,7 @@ import '../config/app_theme.dart';
 import '../models/order_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/order_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -133,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _ProfileMenuItem(
         icon: Icons.favorite_border,
         label: 'Sản phẩm yêu thích',
-        onTap: () => _showComingSoon('Sản phẩm yêu thích'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.favorites),
       ),
       _ProfileMenuItem(
         icon: Icons.support_agent_outlined,
@@ -712,6 +713,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     context.read<CartProvider>().clearLocal();
+    context.read<FavoriteProvider>().clear();
     _loadedOrdersUserId = null;
     Navigator.pushNamedAndRemoveUntil(
       context,

@@ -221,7 +221,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     _row('Tạm tính', Formatters.currency(order.subtotal)),
                     if (order.discount > 0)
                       _row(
-                        'Giảm giá (WELCOME10)',
+                        order.couponCode.isEmpty
+                            ? 'Giảm giá'
+                            : 'Giảm giá (${order.couponCode})',
                         '-${Formatters.currency(order.discount)}',
                         color: AppTheme.error,
                       ),

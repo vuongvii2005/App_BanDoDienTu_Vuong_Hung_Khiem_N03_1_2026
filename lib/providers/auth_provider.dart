@@ -31,8 +31,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   String get role => _userModel?.role ?? 'guest';
   bool get isGuest => !isLoggedIn;
-  bool get isUser => _userModel?.isUser ?? false;
-  bool get isAdmin => _userModel?.isAdmin ?? false;
+  bool get isUser =>
+      (_userModel?.isActive ?? false) && (_userModel?.isUser ?? false);
+  bool get isAdmin =>
+      (_userModel?.isActive ?? false) && (_userModel?.isAdmin ?? false);
   bool get canBuy => isUser;
   bool get canManageShop => isAdmin;
 

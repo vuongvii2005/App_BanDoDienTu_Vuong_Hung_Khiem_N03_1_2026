@@ -12,6 +12,13 @@ Future<void> seedFirestoreData() async {
   }
   await categoryBatch.commit();
 
+  final couponBatch = firestore.batch();
+  for (final coupon in _coupons) {
+    final docRef = firestore.collection('coupons').doc(coupon['id'] as String);
+    couponBatch.set(docRef, coupon, SetOptions(merge: true));
+  }
+  await couponBatch.commit();
+
   final productBatch = firestore.batch();
   for (final product in _products) {
     final docRef =
@@ -43,6 +50,13 @@ Future<void> seedFirestoreData() async {
     }
   }
   await variantBatch.commit();
+
+  final reviewBatch = firestore.batch();
+  for (final review in _reviews) {
+    final docRef = firestore.collection('reviews').doc(review['id'] as String);
+    reviewBatch.set(docRef, review, SetOptions(merge: true));
+  }
+  await reviewBatch.commit();
 }
 
 final _now = FieldValue.serverTimestamp();
@@ -70,6 +84,130 @@ final List<Map<String, dynamic>> _categories = [
   _category('watch', 'Đồng hồ thông minh', 'W', 5),
   _category('accessory', 'Phụ kiện', 'A', 6),
 ];
+
+final List<Map<String, dynamic>> _coupons = [
+  _coupon(
+    id: 'welcome10',
+    code: 'WELCOME10',
+    type: 'percent',
+    value: 10,
+    minOrder: 1000000,
+    maxDiscount: 500000,
+    usageLimit: 500,
+  ),
+  _coupon(
+    id: 'freeship',
+    code: 'FREESHIP',
+    type: 'fixed',
+    value: 30000,
+    minOrder: 500000,
+    maxDiscount: 30000,
+    usageLimit: 1000,
+  ),
+  _coupon(
+    id: 'tech500',
+    code: 'TECH500',
+    type: 'fixed',
+    value: 500000,
+    minOrder: 10000000,
+    maxDiscount: 500000,
+    usageLimit: 300,
+  ),
+  _coupon(
+    id: 'vip15',
+    code: 'VIP15',
+    type: 'percent',
+    value: 15,
+    minOrder: 20000000,
+    maxDiscount: 2000000,
+    usageLimit: 100,
+  ),
+];
+
+final List<Map<String, dynamic>> _reviews = [
+  _review(
+    id: 'seed-review-iphone-15-pro-max-1',
+    productId: 'iphone-15-pro-max',
+    userName: 'Minh Anh',
+    rating: 5,
+    comment: 'Máy đẹp, camera rất ổn và pin đủ dùng cả ngày. Giao hàng nhanh.',
+  ),
+  _review(
+    id: 'seed-review-macbook-air-m2-1',
+    productId: 'macbook-air-m2',
+    userName: 'Quang Huy',
+    rating: 5,
+    comment: 'Nhẹ, pin lâu, chạy mượt cho học tập và làm việc văn phòng.',
+  ),
+  _review(
+    id: 'seed-review-airpods-pro-2-1',
+    productId: 'airpods-pro-2',
+    userName: 'Ngọc Linh',
+    rating: 4.5,
+    comment: 'Chống ồn tốt, đeo lâu vẫn thoải mái. Hộp sạc gọn.',
+  ),
+  _review(
+    id: 'seed-review-samsung-s24-ultra-1',
+    productId: 'samsung-galaxy-s24-ultra',
+    userName: 'Tuấn Kiệt',
+    rating: 4.5,
+    comment: 'Màn hình đẹp, bút S Pen tiện. Máy hơi lớn nhưng cầm chắc tay.',
+  ),
+  _review(
+    id: 'seed-review-keychron-k2-1',
+    productId: 'keychron-k2',
+    userName: 'Bảo Trân',
+    rating: 4,
+    comment: 'Gõ tốt, kết nối ổn. Layout nhỏ gọn hợp bàn làm việc.',
+  ),
+];
+
+Map<String, dynamic> _review({
+  required String id,
+  required String productId,
+  required String userName,
+  required double rating,
+  required String comment,
+}) {
+  return {
+    'id': id,
+    'userId': 'seed-user',
+    'userName': userName,
+    'productId': productId,
+    'orderId': '',
+    'rating': rating,
+    'comment': comment,
+    'images': <String>[],
+    'createdAt': _now,
+    'updatedAt': _now,
+  };
+}
+
+Map<String, dynamic> _coupon({
+  required String id,
+  required String code,
+  required String type,
+  required int value,
+  required int minOrder,
+  required int maxDiscount,
+  required int usageLimit,
+}) {
+  return {
+    'id': id,
+    'code': code,
+    'type': type,
+    'value': value,
+    'minOrder': minOrder,
+    'maxDiscount': maxDiscount,
+    'usageLimit': usageLimit,
+    'usedCount': 0,
+    'startAt': DateTime(2026, 1, 1),
+    'endAt': DateTime(2026, 12, 31, 23, 59, 59),
+    'isActive': true,
+    'createdAt': _now,
+    'updatedAt': _now,
+  };
+}
 
 Map<String, dynamic> _category(
   String id,

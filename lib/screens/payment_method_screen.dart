@@ -620,6 +620,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
           subtotal: cart.subtotal,
           discount: cart.discount,
           shippingFee: cart.shippingFee,
+          couponCode: cart.couponCode,
         );
 
         if (!mounted) return;

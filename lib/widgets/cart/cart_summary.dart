@@ -33,7 +33,7 @@ class CartSummary extends StatelessWidget {
           _row('Tạm tính', Formatters.currency(cart.subtotal)),
           if (cart.discount > 0)
             _row(
-              'Giảm giá',
+              cart.discountLabel,
               '-${Formatters.currency(cart.discount)}',
               valueColor: AppTheme.error,
             ),

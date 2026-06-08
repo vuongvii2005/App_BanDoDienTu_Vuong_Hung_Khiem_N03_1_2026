@@ -12,6 +12,7 @@ class UserModel {
   final String avatarUrl;
   final String address;
   final String role;
+  final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +24,7 @@ class UserModel {
     this.avatarUrl = '',
     this.address = '',
     this.role = 'user',
+    this.isActive = true,
     this.createdAt,
     this.updatedAt,
   });
@@ -48,6 +50,7 @@ class UserModel {
       avatarUrl: _string(map['avatarUrl']),
       address: _string(map['address']),
       role: role.isEmpty ? roleUser : role,
+      isActive: map.containsKey('isActive') ? _bool(map['isActive']) : true,
       createdAt: _date(map['createdAt']),
       updatedAt: _date(map['updatedAt']),
     );
@@ -61,6 +64,7 @@ class UserModel {
         'avatarUrl': avatarUrl,
         'address': address,
         'role': role,
+        'isActive': isActive,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
       };
@@ -71,6 +75,7 @@ class UserModel {
     String? avatarUrl,
     String? address,
     String? role,
+    bool? isActive,
     DateTime? updatedAt,
   }) {
     return UserModel(
@@ -81,12 +86,20 @@ class UserModel {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       address: address ?? this.address,
       role: role?.trim().toLowerCase() ?? this.role,
+      isActive: isActive ?? this.isActive,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   static String _string(dynamic value) => value?.toString() ?? '';
+
+  static bool _bool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase();
+    return text == 'true' || text == '1' || text == 'yes';
+  }
 
   static DateTime? _date(dynamic value) {
     if (value is Timestamp) return value.toDate();

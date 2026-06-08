@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/cart_item_model.dart';
+import '../models/coupon_model.dart';
 import '../models/product_model.dart';
 import '../models/product_variant_model.dart';
 import '../services/cart_service.dart';
@@ -17,19 +18,22 @@ class CartProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _userId;
+  CouponModel? _coupon;
 
   List<CartItem> get items => List.unmodifiable(_items);
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get userId => _userId;
+  CouponModel? get coupon => _coupon;
+  String get couponCode => discount > 0 ? (_coupon?.code ?? '') : '';
+  String get discountLabel =>
+      couponCode.isEmpty ? 'Giảm giá' : 'Giảm giá ($couponCode)';
 
   int get totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
   int get itemCount => totalItems;
 
   int get subtotal => _items.fold<int>(0, (sum, item) => sum + item.totalPrice);
-  int get discount => subtotal >= AppConstants.discountMin
-      ? subtotal * AppConstants.discountPercent ~/ 100
-      : 0;
+  int get discount => _coupon?.discountFor(subtotal) ?? 0;
   int get shippingFee =>
       subtotal >= AppConstants.freeShippingMin || subtotal == 0
           ? 0
@@ -44,6 +48,7 @@ class CartProvider extends ChangeNotifier {
 
     try {
       _items = await _cartService.getCartItems(userId);
+      if (_items.isEmpty) _coupon = null;
     } catch (error) {
       _error = 'Không tải được giỏ hàng';
       _items = <CartItem>[];
@@ -124,6 +129,7 @@ class CartProvider extends ChangeNotifier {
     try {
       await _cartService.clearCart(userId);
       _items = <CartItem>[];
+      _coupon = null;
     } catch (error) {
       _error = 'Không xóa được giỏ hàng';
     }
@@ -133,6 +139,17 @@ class CartProvider extends ChangeNotifier {
 
   void clearLocal() {
     _items = <CartItem>[];
+    _coupon = null;
+    notifyListeners();
+  }
+
+  void applyCoupon(CouponModel coupon) {
+    _coupon = coupon;
+    notifyListeners();
+  }
+
+  void clearCoupon() {
+    _coupon = null;
     notifyListeners();
   }
 

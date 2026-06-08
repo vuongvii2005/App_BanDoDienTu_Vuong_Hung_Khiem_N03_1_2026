@@ -5,6 +5,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_screen.dart';
+import '../screens/favorites_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/order_confirm_screen.dart';
 import '../screens/order_detail_screen.dart';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const String orderSuccess = '/order-success';
   static const String orderHistory = '/order-history';
   static const String orderDetail = '/order-detail';
+  static const String favorites = '/favorites';
   static const String search = '/search';
   static const String login = '/login';
   static const String register = '/register';
@@ -70,6 +72,7 @@ class AppRoutes {
         orderDetail: (ctx) => OrderDetailScreen(
               orderId: _orderIdFromArguments(ctx),
             ),
+        favorites: (_) => const FavoritesScreen(),
         search: (_) => const SearchScreen(),
         login: (_) => const LoginScreen(),
         register: (_) => const RegisterScreen(),

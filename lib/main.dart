@@ -11,12 +11,16 @@ import 'config/app_routes.dart';
 import 'database/seed_firestore.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/address_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/coupon_provider.dart';
+import 'providers/favorite_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/review_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,10 +45,14 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AddressProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => CouponProvider()),
+        ChangeNotifierProvider(create: (_) => FavoriteProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],

@@ -76,6 +76,7 @@ class OrderModel {
   final int discount;
   final int shippingFee;
   final int total;
+  final String couponCode;
   final String paymentMethod;
   final String shippingAddress;
   final String phone;
@@ -91,6 +92,7 @@ class OrderModel {
     this.discount = 0,
     this.shippingFee = 0,
     required this.total,
+    this.couponCode = '',
     required this.paymentMethod,
     required this.shippingAddress,
     this.phone = '',
@@ -122,6 +124,7 @@ class OrderModel {
       discount: _moneyInt(map['discount']),
       shippingFee: _moneyInt(map['shippingFee']),
       total: _moneyInt(map['total']),
+      couponCode: _string(map['couponCode']),
       paymentMethod: _string(map['paymentMethod']),
       shippingAddress: _string(map['shippingAddress']),
       phone: _string(map['phone']),
@@ -139,6 +142,7 @@ class OrderModel {
         'discount': discount,
         'shippingFee': shippingFee,
         'total': total,
+        'couponCode': couponCode,
         'paymentMethod': paymentMethod,
         'shippingAddress': shippingAddress,
         'phone': phone,
