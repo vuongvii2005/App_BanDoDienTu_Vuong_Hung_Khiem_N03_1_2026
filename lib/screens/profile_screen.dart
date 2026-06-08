@@ -114,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _ProfileMenuItem(
         icon: Icons.person_outline,
         label: 'Thông tin cá nhân',
-        onTap: () => _showComingSoon('Thông tin cá nhân'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.profileInfo),
       ),
       _ProfileMenuItem(
         icon: Icons.location_on_outlined,
