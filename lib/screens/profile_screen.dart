@@ -202,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildNotificationButton(int count) {
     return IconButton(
-      onPressed: () => _showComingSoon('Thông báo'),
+      onPressed: () => Navigator.pushNamed(context, AppRoutes.notification),
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -259,7 +259,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           TextButton.icon(
-            onPressed: () => _showComingSoon('Chỉnh sửa hồ sơ'),
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.profileInfo),
             icon: const Icon(Icons.edit_outlined, size: 17),
             label: const Text('Chỉnh sửa'),
             style: TextButton.styleFrom(
@@ -309,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String tier,
   }) {
     return GestureDetector(
-      onTap: () => _showComingSoon('Thành viên Tech Store'),
+      onTap: () => Navigator.pushNamed(context, AppRoutes.membership),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),

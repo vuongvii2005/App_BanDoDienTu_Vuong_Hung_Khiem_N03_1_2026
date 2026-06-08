@@ -7,6 +7,8 @@ import '../screens/cart_screen.dart';
 import '../screens/checkout_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/membership_screen.dart';
+import '../screens/notification_screen.dart';
 import '../screens/order_confirm_screen.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/order_history_screen.dart';
@@ -42,6 +44,8 @@ class AppRoutes {
   static const String coupon = '/coupon';
   static const String support = '/support';
   static const String settings = '/settings';
+  static const String notification = '/notification';
+  static const String membership = '/membership';
 
   static String _orderIdFromArguments(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -92,5 +96,7 @@ class AppRoutes {
         coupon: (_) => const CouponScreen(),
         support: (_) => const SupportScreen(),
         settings: (_) => const SettingsScreen(),
+        notification: (_) => const NotificationScreen(),
+        membership: (_) => const MembershipScreen(),
       };
 }
