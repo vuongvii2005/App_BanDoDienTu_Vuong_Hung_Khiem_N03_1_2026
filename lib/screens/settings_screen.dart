@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../providers/auth_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,228 +13,180 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _pushNotification = true;
   bool _orderNotification = true;
-  bool _promotionNotification = false;
-  bool _soundEnabled = true;
-  bool _biometricLogin = false;
-  bool _darkMode = false;
   String _selectedLang = 'vi';
-  String _selectedCurrency = 'VND';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.greyLight,
       appBar: AppBar(
-        title: const Text('Cài đặt'),
+        backgroundColor: AppTheme.white,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon:
+              const Icon(Icons.arrow_back_ios, color: AppTheme.black, size: 20),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Cài đặt',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.black,
+          ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
-          // Thông báo
-          _buildSectionLabel('Thông báo'),
-          const SizedBox(height: 10),
-          _buildCard(children: [
-            _buildToggleTile(
+          // ── Thông báo ─────────────────────────────────────────────
+          _sectionLabel('Thông báo'),
+          const SizedBox(height: 8),
+          _card([
+            _toggleTile(
               icon: Icons.notifications_outlined,
               iconColor: AppTheme.primary,
               title: 'Thông báo đẩy',
               subtitle: 'Nhận thông báo từ ứng dụng',
               value: _pushNotification,
-              onChanged: (v) => setState(() => _pushNotification = v),
+              onChanged: (v) => setState(() {
+                _pushNotification = v;
+                if (!v) _orderNotification = false;
+              }),
             ),
-            _buildDivider(),
-            _buildToggleTile(
-              icon: Icons.shopping_bag_outlined,
-              iconColor: AppTheme.success,
+            _divider(),
+            _toggleTile(
+              icon: Icons.local_shipping_outlined,
+              iconColor: const Color(0xFF2E7D32),
               title: 'Thông báo đơn hàng',
               subtitle: 'Cập nhật trạng thái đơn hàng',
               value: _orderNotification,
               onChanged: (v) => setState(() => _orderNotification = v),
               enabled: _pushNotification,
             ),
-            _buildDivider(),
-            _buildToggleTile(
-              icon: Icons.local_offer_outlined,
-              iconColor: AppTheme.warning,
-              title: 'Thông báo khuyến mãi',
-              subtitle: 'Ưu đãi, flash sale, voucher mới',
-              value: _promotionNotification,
-              onChanged: (v) => setState(() => _promotionNotification = v),
-              enabled: _pushNotification,
-            ),
-            _buildDivider(),
-            _buildToggleTile(
-              icon: Icons.volume_up_outlined,
-              iconColor: const Color(0xFF7B5EA7),
-              title: 'Âm thanh thông báo',
-              subtitle: 'Phát âm khi có thông báo mới',
-              value: _soundEnabled,
-              onChanged: (v) => setState(() => _soundEnabled = v),
-              enabled: _pushNotification,
-            ),
           ]),
 
           const SizedBox(height: 20),
 
-          // Bảo mật
-          _buildSectionLabel('Bảo mật & Đăng nhập'),
-          const SizedBox(height: 10),
-          _buildCard(children: [
-            _buildToggleTile(
-              icon: Icons.fingerprint,
-              iconColor: const Color(0xFF1565C0),
-              title: 'Đăng nhập sinh trắc học',
-              subtitle: 'Vân tay / Face ID',
-              value: _biometricLogin,
-              onChanged: (v) => setState(() => _biometricLogin = v),
-            ),
-            _buildDivider(),
-            _buildNavTile(
+          // ── Tài khoản ─────────────────────────────────────────────
+          _sectionLabel('Tài khoản'),
+          const SizedBox(height: 8),
+          _card([
+            _navTile(
               icon: Icons.lock_outline,
-              iconColor: AppTheme.error,
+              iconColor: const Color(0xFF1565C0),
               title: 'Đổi mật khẩu',
-              onTap: () => _showSnack('Đang mở trang đổi mật khẩu'),
-            ),
-            _buildDivider(),
-            _buildNavTile(
-              icon: Icons.shield_outlined,
-              iconColor: AppTheme.success,
-              title: 'Xác minh 2 bước (2FA)',
-              trailing: _buildBadge('Chưa bật', AppTheme.warning),
-              onTap: () => _showSnack('Đang thiết lập xác minh 2 bước'),
-            ),
-            _buildDivider(),
-            _buildNavTile(
-              icon: Icons.devices_outlined,
-              iconColor: AppTheme.grey,
-              title: 'Thiết bị đang đăng nhập',
-              onTap: () => _showSnack('Đang xem danh sách thiết bị'),
+              onTap: () => _showChangePasswordSheet(),
             ),
           ]),
 
           const SizedBox(height: 20),
 
-          // Giao diện
-          _buildSectionLabel('Giao diện'),
-          const SizedBox(height: 10),
-          _buildCard(children: [
-            _buildToggleTile(
-              icon: Icons.dark_mode_outlined,
-              iconColor: AppTheme.black,
-              title: 'Chế độ tối',
-              subtitle: 'Dark mode (Sắp ra mắt)',
-              value: _darkMode,
-              onChanged: (_) => _showSnack('Tính năng sắp ra mắt'),
-            ),
-            _buildDivider(),
-            _buildSelectTile(
+          // ── Ngôn ngữ ──────────────────────────────────────────────
+          _sectionLabel('Ngôn ngữ & Khu vực'),
+          const SizedBox(height: 8),
+          _card([
+            _selectTile(
               icon: Icons.language_outlined,
               iconColor: const Color(0xFF1565C0),
               title: 'Ngôn ngữ',
               value: _selectedLang == 'vi' ? '🇻🇳 Tiếng Việt' : '🇺🇸 English',
-              onTap: () => _showLangPicker(),
-            ),
-            _buildDivider(),
-            _buildSelectTile(
-              icon: Icons.currency_exchange_outlined,
-              iconColor: AppTheme.success,
-              title: 'Đơn vị tiền tệ',
-              value: _selectedCurrency,
-              onTap: () => _showSnack('VND là đơn vị mặc định'),
+              onTap: _showLangPicker,
             ),
           ]),
 
           const SizedBox(height: 20),
 
-          // Dữ liệu & Quyền riêng tư
-          _buildSectionLabel('Dữ liệu & Quyền riêng tư'),
-          const SizedBox(height: 10),
-          _buildCard(children: [
-            _buildNavTile(
+          // ── Dữ liệu ───────────────────────────────────────────────
+          _sectionLabel('Dữ liệu & Quyền riêng tư'),
+          const SizedBox(height: 8),
+          _card([
+            _navTile(
               icon: Icons.history_outlined,
               iconColor: AppTheme.grey,
-              title: 'Lịch sử tìm kiếm',
-              onTap: () => _showClearSearchDialog(),
+              title: 'Xóa lịch sử tìm kiếm',
+              onTap: _showClearSearchDialog,
             ),
-            _buildDivider(),
-            _buildNavTile(
+            _divider(),
+            _navTile(
               icon: Icons.privacy_tip_outlined,
               iconColor: const Color(0xFF1565C0),
               title: 'Chính sách quyền riêng tư',
-              onTap: () => _showSnack('Đang mở chính sách bảo mật'),
+              onTap: () => _showInfoSheet(
+                title: 'Chính sách quyền riêng tư',
+                content: 'Tech Store cam kết bảo vệ thông tin cá nhân của bạn. '
+                    'Dữ liệu chỉ được sử dụng để cải thiện trải nghiệm mua sắm '
+                    'và sẽ không được chia sẻ với bên thứ ba khi chưa có sự đồng ý.',
+              ),
             ),
-            _buildDivider(),
-            _buildNavTile(
+            _divider(),
+            _navTile(
               icon: Icons.article_outlined,
               iconColor: AppTheme.grey,
               title: 'Điều khoản dịch vụ',
-              onTap: () => _showSnack('Đang mở điều khoản'),
+              onTap: () => _showInfoSheet(
+                title: 'Điều khoản dịch vụ',
+                content:
+                    'Khi sử dụng Tech Store, bạn đồng ý tuân thủ các điều khoản '
+                    'và điều kiện của chúng tôi. Vui lòng đọc kỹ trước khi đặt hàng.',
+              ),
             ),
           ]),
 
           const SizedBox(height: 20),
 
-          // Ứng dụng
-          _buildSectionLabel('Ứng dụng'),
-          const SizedBox(height: 10),
-          _buildCard(children: [
-            _buildNavTile(
-              icon: Icons.star_outline,
-              iconColor: AppTheme.star,
-              title: 'Đánh giá ứng dụng',
-              onTap: () => _showSnack('Đang mở trang đánh giá...'),
-            ),
-            _buildDivider(),
-            _buildNavTile(
-              icon: Icons.share_outlined,
-              iconColor: AppTheme.primary,
-              title: 'Chia sẻ ứng dụng',
-              onTap: () => _showSnack('Đang mở tùy chọn chia sẻ...'),
-            ),
-            _buildDivider(),
-            _buildInfoTile(
+          // ── Ứng dụng ──────────────────────────────────────────────
+          _sectionLabel('Ứng dụng'),
+          const SizedBox(height: 8),
+          _card([
+            _infoTile(
               icon: Icons.info_outline,
               iconColor: AppTheme.grey,
-              title: 'Phiên bản ứng dụng',
+              title: 'Phiên bản',
               value: 'v1.0.0',
             ),
           ]),
 
           const SizedBox(height: 20),
 
-          // Nguy hiểm
-          _buildCard(children: [
-            _buildNavTile(
+          // ── Vùng nguy hiểm ────────────────────────────────────────
+          _card([
+            _navTile(
               icon: Icons.delete_forever_outlined,
               iconColor: AppTheme.error,
               title: 'Xóa tài khoản',
               titleColor: AppTheme.error,
-              onTap: () => _showDeleteAccountDialog(),
+              onTap: _showDeleteAccountDialog,
             ),
           ]),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: AppTheme.grey,
+  // ── Section label ──────────────────────────────────────────────────────
+
+  Widget _sectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.grey,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }
 
-  Widget _buildCard({required List<Widget> children}) {
+  // ── Card container ─────────────────────────────────────────────────────
+
+  Widget _card(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.white,
@@ -250,10 +204,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDivider() => const Divider(
-      height: 1, indent: 52, endIndent: 14, color: AppTheme.greyLight);
+  Widget _divider() => const Divider(
+        height: 1,
+        indent: 52,
+        endIndent: 14,
+        color: AppTheme.greyLight,
+      );
 
-  Widget _buildToggleTile({
+  // ── Toggle tile ────────────────────────────────────────────────────────
+
+  Widget _toggleTile({
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -263,20 +223,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool enabled = true,
   }) {
     return Opacity(
-      opacity: enabled ? 1.0 : 0.5,
+      opacity: enabled ? 1.0 : 0.45,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
+            _iconBox(icon, iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -310,13 +262,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildNavTile({
+  // ── Nav tile ───────────────────────────────────────────────────────────
+
+  Widget _navTile({
     required IconData icon,
     required Color iconColor,
     required String title,
     Color titleColor = AppTheme.black,
-    Widget? trailing,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
@@ -325,15 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
+            _iconBox(icon, iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -345,20 +290,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-            trailing ??
-                const Icon(Icons.chevron_right, color: AppTheme.grey, size: 20),
+            const Icon(Icons.chevron_right, color: AppTheme.grey, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSelectTile({
+  // ── Select tile ────────────────────────────────────────────────────────
+
+  Widget _selectTile({
     required IconData icon,
     required Color iconColor,
     required String title,
     required String value,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
@@ -367,15 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
+            _iconBox(icon, iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -403,7 +341,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildInfoTile({
+  // ── Info tile (read-only) ──────────────────────────────────────────────
+
+  Widget _infoTile({
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -413,15 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
+          _iconBox(icon, iconColor),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -453,23 +385,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildBadge(String text, Color color) {
+  // ── Icon box helper ────────────────────────────────────────────────────
+
+  Widget _iconBox(IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
+      child: Icon(icon, color: color, size: 20),
     );
   }
+
+  // ── Bottom sheets & dialogs ────────────────────────────────────────────
 
   void _showLangPicker() {
     showModalBottomSheet(
@@ -497,11 +427,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Chọn ngôn ngữ',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _langOption('vi', '🇻🇳', 'Tiếng Việt'),
             const Divider(height: 1, indent: 56, color: AppTheme.greyLight),
             _langOption('en', '🇺🇸', 'English'),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
           ],
         ),
       ),
@@ -539,20 +469,232 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showChangePasswordSheet() {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppTheme.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.greyLight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Đổi mật khẩu',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 20),
+                  _pwField(
+                    controller: currentCtrl,
+                    label: 'Mật khẩu hiện tại',
+                    obscure: obscureCurrent,
+                    onToggle: () =>
+                        setModalState(() => obscureCurrent = !obscureCurrent),
+                  ),
+                  const SizedBox(height: 12),
+                  _pwField(
+                    controller: newCtrl,
+                    label: 'Mật khẩu mới',
+                    obscure: obscureNew,
+                    onToggle: () =>
+                        setModalState(() => obscureNew = !obscureNew),
+                  ),
+                  const SizedBox(height: 12),
+                  _pwField(
+                    controller: confirmCtrl,
+                    label: 'Xác nhận mật khẩu mới',
+                    obscure: obscureConfirm,
+                    onToggle: () =>
+                        setModalState(() => obscureConfirm = !obscureConfirm),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showSnack('Mật khẩu đã được cập nhật');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Cập nhật',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pwField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: const TextStyle(fontSize: 14, color: AppTheme.black),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 13, color: AppTheme.grey),
+        filled: true,
+        fillColor: AppTheme.greyLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            color: AppTheme.grey,
+            size: 20,
+          ),
+          onPressed: onToggle,
+        ),
+      ),
+    );
+  }
+
+  void _showInfoSheet({required String title, required String content}) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.greyLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              content,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.grey,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Đã hiểu',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showClearSearchDialog() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xóa lịch sử tìm kiếm',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Toàn bộ lịch sử tìm kiếm sẽ bị xóa vĩnh viễn.'),
+        title: const Text(
+          'Xóa lịch sử tìm kiếm',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+        content: const Text(
+          'Toàn bộ lịch sử tìm kiếm sẽ bị xóa vĩnh viễn.',
+          style: TextStyle(fontSize: 14, color: AppTheme.grey),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy',
-                style: TextStyle(
-                    color: AppTheme.grey, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(
+                color: AppTheme.grey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -560,10 +702,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _showSnack('Đã xóa lịch sử tìm kiếm');
             },
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(80, 40),
               backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
             ),
-            child: const Text('Xóa'),
+            child: const Text('Xóa',
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -575,29 +722,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xóa tài khoản',
-            style:
-                TextStyle(fontWeight: FontWeight.w800, color: AppTheme.error)),
+        title: const Text(
+          'Xóa tài khoản',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: AppTheme.error,
+          ),
+        ),
         content: const Text(
-          'Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.',
+          'Hành động này không thể hoàn tác.\nTất cả dữ liệu sẽ bị xóa vĩnh viễn.',
+          style: TextStyle(fontSize: 14, color: AppTheme.grey, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy',
-                style: TextStyle(
-                    color: AppTheme.grey, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Hủy',
+              style:
+                  TextStyle(color: AppTheme.grey, fontWeight: FontWeight.w600),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _showSnack('Đang xử lý yêu cầu xóa tài khoản...');
+              // TODO: gọi AuthProvider.deleteAccount()
+              _showSnack('Đang xử lý yêu cầu...');
             },
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(80, 40),
               backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
             ),
-            child: const Text('Xóa tài khoản'),
+            child: const Text(
+              'Xóa tài khoản',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),

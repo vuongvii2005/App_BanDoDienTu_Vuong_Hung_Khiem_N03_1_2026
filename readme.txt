@@ -232,3 +232,15 @@ cập  nhật xong phần login đăng nhập nahnh bằng save và hiển thị
 
 cập nhật thành công tỉnh thành ở chọn tỉnh thành và quận huyện ứng với nó.
 Thêm file address coupon favorite ở back end
+
+========================================================
+đã có hết  giao diện của trang cá nhân
+yêu cầu
+hãy test chức năng nhé(bạn Vương)
+tạo các fiel mới của screens
+1:setting.dart
+2:membership.dart
+3:notifi.dart
+4:coupon.dart
+5:support.dart
+và sửa lại app_routes và profile_screen
