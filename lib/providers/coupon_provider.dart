@@ -10,12 +10,18 @@ class CouponProvider extends ChangeNotifier {
   final CouponService _couponService;
 
   List<CouponModel> _coupons = <CouponModel>[];
+  List<CouponModel> _adminCoupons = <CouponModel>[];
   bool _isLoading = false;
+  bool _isAdminLoading = false;
   String? _error;
+  String? _adminError;
 
   List<CouponModel> get coupons => List.unmodifiable(_coupons);
+  List<CouponModel> get adminCoupons => List.unmodifiable(_adminCoupons);
   bool get isLoading => _isLoading;
+  bool get isAdminLoading => _isAdminLoading;
   String? get error => _error;
+  String? get adminError => _adminError;
 
   Future<void> loadCoupons() async {
     _setLoading(true);
@@ -28,6 +34,80 @@ class CouponProvider extends ChangeNotifier {
       _coupons = <CouponModel>[];
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> loadAdminCoupons() async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      _adminCoupons = await _couponService.getCoupons(activeOnly: false);
+    } catch (error) {
+      _adminError = 'Không tải được danh sách mã giảm giá';
+      _adminCoupons = <CouponModel>[];
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> saveCoupon(CouponModel coupon) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      final id = await _couponService.saveCoupon(coupon);
+      final savedCoupon = CouponModel(
+        id: id,
+        code: CouponModel.normalizeCode(coupon.code),
+        type: coupon.type,
+        value: coupon.value,
+        minOrder: coupon.minOrder,
+        maxDiscount: coupon.maxDiscount,
+        usageLimit: coupon.usageLimit,
+        usedCount: coupon.usedCount,
+        startAt: coupon.startAt,
+        endAt: coupon.endAt,
+        isActive: coupon.isActive,
+        createdAt: coupon.createdAt,
+        updatedAt: DateTime.now(),
+      );
+      _upsertCoupon(_adminCoupons, savedCoupon);
+      if (savedCoupon.isActive) {
+        _upsertCoupon(_coupons, savedCoupon);
+      } else {
+        _coupons.removeWhere((item) => item.id == savedCoupon.id);
+      }
+      _sortCoupons(_adminCoupons);
+      _sortCoupons(_coupons);
+      return true;
+    } catch (error) {
+      _adminError = 'Không lưu được mã giảm giá';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> setCouponActive(String id, bool isActive) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      await _couponService.setCouponActive(id, isActive);
+      _setCachedCouponActive(_adminCoupons, id, isActive);
+      _setCachedCouponActive(_coupons, id, isActive);
+      if (!isActive) {
+        _coupons.removeWhere((coupon) => coupon.id == id);
+      } else {
+        await loadCoupons();
+      }
+      return true;
+    } catch (error) {
+      _adminError = 'Không cập nhật được trạng thái mã giảm giá';
+      return false;
+    } finally {
+      _setAdminLoading(false);
     }
   }
 
@@ -79,5 +159,50 @@ class CouponProvider extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void _setAdminLoading(bool value) {
+    _isAdminLoading = value;
+    notifyListeners();
+  }
+
+  void _upsertCoupon(List<CouponModel> coupons, CouponModel coupon) {
+    final index = coupons.indexWhere((item) => item.id == coupon.id);
+    if (index == -1) {
+      coupons.add(coupon);
+      return;
+    }
+
+    coupons[index] = coupon;
+  }
+
+  void _setCachedCouponActive(
+    List<CouponModel> coupons,
+    String id,
+    bool isActive,
+  ) {
+    final index = coupons.indexWhere((coupon) => coupon.id == id);
+    if (index == -1) return;
+
+    final coupon = coupons[index];
+    coupons[index] = CouponModel(
+      id: coupon.id,
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      minOrder: coupon.minOrder,
+      maxDiscount: coupon.maxDiscount,
+      usageLimit: coupon.usageLimit,
+      usedCount: coupon.usedCount,
+      startAt: coupon.startAt,
+      endAt: coupon.endAt,
+      isActive: isActive,
+      createdAt: coupon.createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void _sortCoupons(List<CouponModel> coupons) {
+    coupons.sort((first, second) => first.code.compareTo(second.code));
   }
 }

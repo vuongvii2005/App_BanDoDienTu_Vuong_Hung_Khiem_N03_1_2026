@@ -17,7 +17,13 @@ class ProductService {
       _products.doc(productId).collection('variants');
 
   Future<List<Product>> getAllProducts() async {
-    final snapshot = await _products.where('isActive', isEqualTo: true).get();
+    return getProducts(activeOnly: true);
+  }
+
+  Future<List<Product>> getProducts({bool activeOnly = true}) async {
+    final query =
+        activeOnly ? _products.where('isActive', isEqualTo: true) : _products;
+    final snapshot = await query.get();
     return _productsFromSnapshot(snapshot);
   }
 
@@ -100,6 +106,7 @@ class ProductService {
       'createdAt': product.createdAt ?? FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _ensureDefaultVariant(docRef.id, product);
 
     return docRef.id;
   }
@@ -113,6 +120,7 @@ class ProductService {
       ...product.toMap(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _ensureDefaultVariant(product.id, product);
   }
 
   Future<void> deleteProduct(String id) async {
@@ -121,6 +129,37 @@ class ProductService {
     }
 
     await _products.doc(id).delete();
+  }
+
+  Future<void> setProductActive(String id, bool isActive) async {
+    if (id.trim().isEmpty) {
+      throw ArgumentError('Product id cannot be empty.');
+    }
+
+    await _products.doc(id).update({
+      'isActive': isActive,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> _ensureDefaultVariant(String productId, Product product) async {
+    final snapshot = await _variants(productId).limit(1).get();
+    if (snapshot.docs.isNotEmpty) return;
+
+    await _variants(productId).doc('default').set({
+      'id': 'default',
+      'productId': productId,
+      'storage': 'Mặc định',
+      'color': 'Mặc định',
+      'price': product.minPrice,
+      'oldPrice': 0,
+      'stock': product.totalStock,
+      'sku': productId.toUpperCase(),
+      'imageUrl': product.imageUrl,
+      'isActive': true,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   List<Product> _productsFromSnapshot(

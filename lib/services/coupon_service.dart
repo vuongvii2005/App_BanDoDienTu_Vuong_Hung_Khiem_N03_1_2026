@@ -12,7 +12,13 @@ class CouponService {
       _firestore.collection('coupons');
 
   Future<List<CouponModel>> getActiveCoupons() async {
-    final snapshot = await _coupons.where('isActive', isEqualTo: true).get();
+    return getCoupons(activeOnly: true);
+  }
+
+  Future<List<CouponModel>> getCoupons({bool activeOnly = true}) async {
+    final query =
+        activeOnly ? _coupons.where('isActive', isEqualTo: true) : _coupons;
+    final snapshot = await query.get();
     final coupons = snapshot.docs.map(CouponModel.fromFirestore).toList();
     coupons.sort((first, second) => first.code.compareTo(second.code));
     return coupons;
@@ -44,6 +50,36 @@ class CouponService {
 
     await snapshot.docs.first.reference.update({
       'usedCount': FieldValue.increment(1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<String> saveCoupon(CouponModel coupon) async {
+    final normalizedCode = CouponModel.normalizeCode(coupon.code);
+    final couponId = coupon.id.trim().isEmpty
+        ? normalizedCode
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
+            .replaceAll(RegExp(r'^-+|-+$'), '')
+        : coupon.id.trim();
+    final docRef = _coupons.doc(couponId);
+
+    await docRef.set({
+      ...coupon.toMap(),
+      'id': docRef.id,
+      'code': normalizedCode,
+      'createdAt': coupon.createdAt ?? FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return docRef.id;
+  }
+
+  Future<void> setCouponActive(String id, bool isActive) async {
+    if (id.trim().isEmpty) return;
+
+    await _coupons.doc(id).update({
+      'isActive': isActive,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

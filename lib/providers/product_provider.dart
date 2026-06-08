@@ -14,8 +14,11 @@ class ProductProvider extends ChangeNotifier {
   final ProductService _productService;
 
   List<Product> _products = <Product>[];
+  List<Product> _adminProducts = <Product>[];
   bool _isLoading = false;
+  bool _isAdminLoading = false;
   String? _error;
+  String? _adminError;
   String? _selectedCategoryId;
   String _searchQuery = '';
   final Map<String, List<ProductVariant>> _variantsByProductId =
@@ -24,8 +27,11 @@ class ProductProvider extends ChangeNotifier {
   String? _variantError;
 
   List<Product> get products => List.unmodifiable(_products);
+  List<Product> get adminProducts => List.unmodifiable(_adminProducts);
   bool get isLoading => _isLoading;
+  bool get isAdminLoading => _isAdminLoading;
   String? get error => _error;
+  String? get adminError => _adminError;
   String? get selectedCategoryId => _selectedCategoryId;
   String get searchQuery => _searchQuery;
   String? get variantError => _variantError;
@@ -70,6 +76,76 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() => loadProducts();
+
+  Future<void> loadAdminProducts() async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      _adminProducts = await _productService.getProducts(activeOnly: false);
+    } catch (error) {
+      _adminError = 'Không tải được danh sách sản phẩm quản trị';
+      _adminProducts = <Product>[];
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> saveProduct(Product product) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      final id = product.id.trim().isEmpty
+          ? await _productService.addProduct(product)
+          : product.id;
+
+      if (product.id.trim().isNotEmpty) {
+        await _productService.updateProduct(product);
+      }
+
+      final savedProduct = product.copyWith(id: id);
+      _upsertProduct(_adminProducts, savedProduct);
+      if (savedProduct.isActive) {
+        _upsertProduct(_products, savedProduct);
+      } else {
+        _products.removeWhere((item) => item.id == savedProduct.id);
+      }
+      _sortProducts(_adminProducts);
+      _sortProducts(_products);
+      return true;
+    } catch (error) {
+      _adminError = product.id.trim().isEmpty
+          ? 'Không thêm được sản phẩm'
+          : 'Không cập nhật được sản phẩm';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
+  Future<bool> setProductActive(String id, bool isActive) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      await _productService.setProductActive(id, isActive);
+      _setCachedProductActive(_adminProducts, id, isActive);
+      _setCachedProductActive(_products, id, isActive);
+      if (!isActive) {
+        _products.removeWhere((product) => product.id == id);
+      } else {
+        await loadProducts();
+      }
+      return true;
+    } catch (error) {
+      _adminError =
+          isActive ? 'Không khôi phục được sản phẩm' : 'Không ẩn được sản phẩm';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
 
   List<ProductVariant> getVariants(String productId) {
     return List.unmodifiable(
@@ -148,5 +224,41 @@ class ProductProvider extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void _setAdminLoading(bool value) {
+    _isAdminLoading = value;
+    notifyListeners();
+  }
+
+  void _upsertProduct(List<Product> products, Product product) {
+    final index = products.indexWhere((item) => item.id == product.id);
+    if (index == -1) {
+      products.add(product);
+      return;
+    }
+
+    products[index] = product;
+  }
+
+  void _setCachedProductActive(
+    List<Product> products,
+    String id,
+    bool isActive,
+  ) {
+    final index = products.indexWhere((product) => product.id == id);
+    if (index == -1) return;
+
+    products[index] = products[index].copyWith(
+      isActive: isActive,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void _sortProducts(List<Product> products) {
+    products.sort(
+      (first, second) =>
+          first.name.toLowerCase().compareTo(second.name.toLowerCase()),
+    );
   }
 }

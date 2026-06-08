@@ -40,6 +40,13 @@ class OrderService {
     return orders;
   }
 
+  Future<List<OrderModel>> getAllOrders() async {
+    final snapshot = await _orders.get();
+    final orders = snapshot.docs.map(OrderModel.fromFirestore).toList();
+    orders.sort((first, second) => second.createdAt.compareTo(first.createdAt));
+    return orders;
+  }
+
   Future<OrderModel?> getOrderById(String orderId) async {
     final id = orderId.trim();
     if (id.isEmpty) return null;

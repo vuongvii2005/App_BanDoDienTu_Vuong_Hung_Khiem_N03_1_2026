@@ -17,12 +17,18 @@ class OrderProvider extends ChangeNotifier {
   final CartService _cartService;
 
   List<OrderModel> _orders = <OrderModel>[];
+  List<OrderModel> _adminOrders = <OrderModel>[];
   bool _isLoading = false;
+  bool _isAdminLoading = false;
   String? _error;
+  String? _adminError;
 
   List<OrderModel> get orders => List.unmodifiable(_orders);
+  List<OrderModel> get adminOrders => List.unmodifiable(_adminOrders);
   bool get isLoading => _isLoading;
+  bool get isAdminLoading => _isAdminLoading;
   String? get error => _error;
+  String? get adminError => _adminError;
 
   Future<void> loadOrders(String userId) async {
     _setLoading(true);
@@ -35,6 +41,20 @@ class OrderProvider extends ChangeNotifier {
       _orders = <OrderModel>[];
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> loadAdminOrders() async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      _adminOrders = await _orderService.getAllOrders();
+    } catch (error) {
+      _adminError = 'Không tải được danh sách đơn hàng';
+      _adminOrders = <OrderModel>[];
+    } finally {
+      _setAdminLoading(false);
     }
   }
 
@@ -144,8 +164,60 @@ class OrderProvider extends ChangeNotifier {
 
   OrderModel? getById(String id) => getCachedOrderById(id);
 
+  Future<bool> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    _setAdminLoading(true);
+    _adminError = null;
+
+    try {
+      await _orderService.updateOrderStatus(orderId, status.name);
+      _updateCachedOrderStatus(_adminOrders, orderId, status);
+      _updateCachedOrderStatus(_orders, orderId, status);
+      return true;
+    } catch (error) {
+      _adminError = 'Không cập nhật được trạng thái đơn hàng';
+      return false;
+    } finally {
+      _setAdminLoading(false);
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void _setAdminLoading(bool value) {
+    _isAdminLoading = value;
+    notifyListeners();
+  }
+
+  void _updateCachedOrderStatus(
+    List<OrderModel> orders,
+    String orderId,
+    OrderStatus status,
+  ) {
+    final index = orders.indexWhere((order) => order.id == orderId);
+    if (index == -1) return;
+
+    final order = orders[index];
+    orders[index] = OrderModel(
+      id: order.id,
+      userId: order.userId,
+      items: order.items,
+      subtotal: order.subtotal,
+      discount: order.discount,
+      shippingFee: order.shippingFee,
+      total: order.total,
+      couponCode: order.couponCode,
+      paymentMethod: order.paymentMethod,
+      shippingAddress: order.shippingAddress,
+      phone: order.phone,
+      status: status,
+      createdAt: order.createdAt,
+      updatedAt: DateTime.now(),
+    );
   }
 }

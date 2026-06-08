@@ -46,6 +46,44 @@ class Product {
   List<String> get colorOptions => const <String>[];
   bool get hasPriceRange => maxPrice > minPrice;
 
+  Product copyWith({
+    String? id,
+    String? name,
+    String? brand,
+    String? categoryId,
+    String? description,
+    String? imageUrl,
+    List<String>? images,
+    int? minPrice,
+    int? maxPrice,
+    int? totalStock,
+    double? rating,
+    int? reviewCount,
+    bool? isFeatured,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      categoryId: categoryId ?? this.categoryId,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      images: images ?? this.images,
+      minPrice: minPrice ?? this.minPrice,
+      maxPrice: maxPrice ?? this.maxPrice,
+      totalStock: totalStock ?? this.totalStock,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      isFeatured: isFeatured ?? this.isFeatured,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory Product.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
