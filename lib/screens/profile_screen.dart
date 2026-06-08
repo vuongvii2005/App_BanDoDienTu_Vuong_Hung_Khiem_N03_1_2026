@@ -119,17 +119,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _ProfileMenuItem(
         icon: Icons.location_on_outlined,
         label: 'Địa chỉ giao hàng',
-        onTap: () => _showComingSoon('Địa chỉ giao hàng'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.address),
       ),
       _ProfileMenuItem(
         icon: Icons.credit_card_outlined,
         label: 'Phương thức thanh toán',
-        onTap: () => _showComingSoon('Phương thức thanh toán'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.paymentMethod),
       ),
       _ProfileMenuItem(
         icon: Icons.confirmation_number_outlined,
         label: 'Mã giảm giá',
-        onTap: () => _showComingSoon('Mã giảm giá'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.coupon),
       ),
       _ProfileMenuItem(
         icon: Icons.favorite_border,
@@ -139,12 +139,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _ProfileMenuItem(
         icon: Icons.support_agent_outlined,
         label: 'Hỗ trợ khách hàng',
-        onTap: () => _showComingSoon('Hỗ trợ khách hàng'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.support),
       ),
       _ProfileMenuItem(
         icon: Icons.settings_outlined,
         label: 'Cài đặt',
-        onTap: () => _showComingSoon('Cài đặt'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
       ),
     ];
 
