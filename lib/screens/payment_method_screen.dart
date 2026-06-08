@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'dart:collection';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
@@ -286,9 +285,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
       scale: _expandAnimation,
       child: FadeTransition(
         opacity: _expandAnimation,
-        child: _selected == 'CARD'
-            ? _buildCardForm()
-            : _buildQRCodeDisplay(),
+        child: _selected == 'CARD' ? _buildCardForm() : _buildQRCodeDisplay(),
       ),
     );
   }
@@ -335,10 +332,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
               // Format card number with spaces
               final cleaned = value.replaceAll(' ', '');
               if (cleaned.length <= 16) {
-                final formatted = cleaned.replaceAllMapped(
-                  RegExp(r'.{1,4}'),
-                  (match) => '${match.group(0)} ',
-                ).trim();
+                final formatted = cleaned
+                    .replaceAllMapped(
+                      RegExp(r'.{1,4}'),
+                      (match) => '${match.group(0)} ',
+                    )
+                    .trim();
                 _cardNumberCtrl.value = TextEditingValue(
                   text: formatted,
                   selection: TextSelection.fromPosition(
@@ -381,8 +380,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
                     if (value.length == 2 && !value.contains('/')) {
                       _cardExpiryCtrl.value = TextEditingValue(
                         text: '${value.substring(0, 2)}/',
-                        selection:
-                            TextSelection.fromPosition(
+                        selection: TextSelection.fromPosition(
                           TextPosition(offset: 3),
                         ),
                       );
@@ -535,12 +533,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : () => _processPayment(
-                  context,
-                  cart,
-                  shippingInfo,
-                  auth,
-                ),
+                onPressed: _isLoading
+                    ? null
+                    : () => _processPayment(
+                          context,
+                          cart,
+                          shippingInfo,
+                          auth,
+                        ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -581,13 +581,17 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
     Map<String, String> shippingInfo,
     AuthProvider auth,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final orderProvider = context.read<OrderProvider>();
+
     // Validate payment method details
     if (_selected == 'CARD') {
       if (_cardNumberCtrl.text.isEmpty ||
           _cardHolderCtrl.text.isEmpty ||
           _cardExpiryCtrl.text.isEmpty ||
           _cardCvvCtrl.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Vui lòng điền đầy đủ thông tin thẻ'),
             backgroundColor: Colors.red,
@@ -607,7 +611,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
         if (!mounted) return;
 
         // Place order directly
-        await context.read<OrderProvider>().placeOrder(
+        final orderId = await orderProvider.placeOrder(
           paymentMethod: _selected,
           shippingInfo: shippingInfo,
           userId: auth.currentUser!.uid,
@@ -620,17 +624,25 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
 
         if (!mounted) return;
 
+        if (orderId == null || orderId.trim().isEmpty) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                orderProvider.error ?? 'Khong tao duoc don hang',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
         // Clear cart
         cart.clearLocal();
 
         // Navigate to success screen
-        Navigator.pushReplacementNamed(
-          context,
+        navigator.pushReplacementNamed(
           AppRoutes.orderSuccess,
-          arguments: {
-            'paymentMethod': _selected,
-            'shippingInfo': shippingInfo,
-          },
+          arguments: orderId,
         );
       } else {
         // For other payment methods, go to order confirm
@@ -638,8 +650,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
 
         if (!mounted) return;
 
-        Navigator.pushNamed(
-          context,
+        navigator.pushNamed(
           AppRoutes.orderConfirm,
           arguments: {
             'paymentMethod': _selected,
@@ -657,7 +668,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Lỗi: ${e.toString()}'),
           backgroundColor: Colors.red,
@@ -677,8 +688,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
         return args;
       } else if (args is Map) {
         // Convert Map (including IdentityMap) to LinkedHashMap<String, String>
-        final linkedMap = LinkedHashMap<String, String>();
-        (args as Map).forEach((key, value) {
+        final linkedMap = <String, String>{};
+        args.forEach((key, value) {
           final strKey = key is String ? key : key.toString();
           final strValue = value is String ? value : (value?.toString() ?? '');
           linkedMap[strKey] = strValue;

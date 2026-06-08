@@ -666,7 +666,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _rewardPoints(OrderProvider orderProvider) {
     return orderProvider.orders.fold<int>(
       0,
-      (total, order) => total + (order.total / 10).round(),
+      (total, order) => total + (order.total ~/ 100000),
     );
   }
 

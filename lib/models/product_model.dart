@@ -9,8 +9,8 @@ class Product {
   final String description;
   final String imageUrl;
   final List<String> images;
-  final double minPrice;
-  final double maxPrice;
+  final int minPrice;
+  final int maxPrice;
   final int totalStock;
   final double rating;
   final int reviewCount;
@@ -39,8 +39,8 @@ class Product {
   });
 
   // Compatibility getters for old list/card UI while variants are introduced.
-  double get price => minPrice;
-  double get oldPrice => 0;
+  int get price => minPrice;
+  int get oldPrice => 0;
   int get stock => totalStock;
   List<String> get storageOptions => const <String>[];
   List<String> get colorOptions => const <String>[];
@@ -55,8 +55,8 @@ class Product {
   factory Product.fromMap(Map<String, dynamic> map, {String? id}) {
     final imageUrl = _string(map['imageUrl'] ?? map['image']);
     final images = _stringList(map['images']);
-    final minPrice = _double(map['minPrice'] ?? map['price']);
-    final maxPrice = _double(map['maxPrice'] ?? map['price']);
+    final minPrice = _moneyInt(map['minPrice'] ?? map['price']);
+    final maxPrice = _moneyInt(map['maxPrice'] ?? map['price']);
 
     return Product(
       id: id ?? _string(map['id']),
@@ -110,6 +110,25 @@ class Product {
     if (value is int) return value.toDouble();
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int _moneyInt(dynamic value) {
+    final amount = _moneyAmount(value);
+    final sign = amount < 0 ? -1 : 1;
+    final absoluteAmount = amount.abs();
+
+    if (absoluteAmount == 0) return 0;
+    if (absoluteAmount >= 100000) return amount.round();
+    if (absoluteAmount >= 10000) return sign * (absoluteAmount * 1000).round();
+    return sign * (absoluteAmount * 25000).round();
+  }
+
+  static double _moneyAmount(dynamic value) {
+    if (value is num) return value.toDouble();
+    final text = value?.toString().trim() ?? '';
+    final parsed = num.tryParse(text.replaceAll(',', ''));
+    if (parsed != null) return parsed.toDouble();
+    return double.tryParse(text.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
   }
 
   static int _int(dynamic value) {

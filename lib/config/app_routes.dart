@@ -31,6 +31,26 @@ class AppRoutes {
   static const String register = '/register';
   static const String admin = '/admin';
 
+  static String _orderIdFromArguments(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+
+    if (args is String) {
+      return args;
+    }
+
+    if (args is Map) {
+      final value = args['orderId'] ?? args['id'];
+      if (value != null) {
+        return value.toString();
+      }
+    }
+
+    debugPrint(
+      'Missing orderId argument for ${ModalRoute.of(context)?.settings.name}',
+    );
+    return '';
+  }
+
   static Map<String, WidgetBuilder> get routes => {
         home: (_) => const HomeScreen(),
         productList: (ctx) => ProductListScreen(
@@ -44,11 +64,11 @@ class AppRoutes {
         paymentMethod: (_) => const PaymentMethodScreen(),
         orderConfirm: (_) => const OrderConfirmScreen(),
         orderSuccess: (ctx) => OrderSuccessScreen(
-              orderId: ModalRoute.of(ctx)!.settings.arguments as String,
+              orderId: _orderIdFromArguments(ctx),
             ),
         orderHistory: (_) => const OrderHistoryScreen(),
         orderDetail: (ctx) => OrderDetailScreen(
-              orderId: ModalRoute.of(ctx)!.settings.arguments as String,
+              orderId: _orderIdFromArguments(ctx),
             ),
         search: (_) => const SearchScreen(),
         login: (_) => const LoginScreen(),

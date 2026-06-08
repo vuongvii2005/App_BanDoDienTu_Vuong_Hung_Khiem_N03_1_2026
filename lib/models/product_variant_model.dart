@@ -5,8 +5,8 @@ class ProductVariant {
   final String productId;
   final String storage;
   final String color;
-  final double price;
-  final double oldPrice;
+  final int price;
+  final int oldPrice;
   final int stock;
   final String sku;
   final String imageUrl;
@@ -51,8 +51,8 @@ class ProductVariant {
       productId: productId ?? _string(map['productId']),
       storage: _string(map['storage']),
       color: _string(map['color']),
-      price: _double(map['price']),
-      oldPrice: _double(map['oldPrice']),
+      price: _moneyInt(map['price']),
+      oldPrice: _moneyInt(map['oldPrice']),
       stock: _int(map['stock']),
       sku: _string(map['sku']),
       imageUrl: _string(map['imageUrl']),
@@ -83,11 +83,23 @@ class ProductVariant {
 
   static String _string(dynamic value) => value?.toString() ?? '';
 
-  static double _double(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
+  static int _moneyInt(dynamic value) {
+    final amount = _moneyAmount(value);
+    final sign = amount < 0 ? -1 : 1;
+    final absoluteAmount = amount.abs();
+
+    if (absoluteAmount == 0) return 0;
+    if (absoluteAmount >= 100000) return amount.round();
+    if (absoluteAmount >= 10000) return sign * (absoluteAmount * 1000).round();
+    return sign * (absoluteAmount * 25000).round();
+  }
+
+  static double _moneyAmount(dynamic value) {
     if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
+    final text = value?.toString().trim() ?? '';
+    final parsed = num.tryParse(text.replaceAll(',', ''));
+    if (parsed != null) return parsed.toDouble();
+    return double.tryParse(text.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
   }
 
   static int _int(dynamic value) {

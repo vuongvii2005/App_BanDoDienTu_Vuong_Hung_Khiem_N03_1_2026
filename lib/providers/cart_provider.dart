@@ -5,6 +5,7 @@ import '../models/cart_item_model.dart';
 import '../models/product_model.dart';
 import '../models/product_variant_model.dart';
 import '../services/cart_service.dart';
+import '../utils/constants.dart';
 
 class CartProvider extends ChangeNotifier {
   CartProvider({CartService? cartService})
@@ -25,11 +26,16 @@ class CartProvider extends ChangeNotifier {
   int get totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
   int get itemCount => totalItems;
 
-  double get subtotal => _items.fold(0, (sum, item) => sum + item.totalPrice);
-  double get discount => subtotal >= 1000 ? subtotal * 0.1 : 0;
-  double get shippingFee => subtotal >= 500 || subtotal == 0 ? 0 : 15;
-  double get totalPrice => subtotal - discount + shippingFee;
-  double get total => totalPrice;
+  int get subtotal => _items.fold<int>(0, (sum, item) => sum + item.totalPrice);
+  int get discount => subtotal >= AppConstants.discountMin
+      ? subtotal * AppConstants.discountPercent ~/ 100
+      : 0;
+  int get shippingFee =>
+      subtotal >= AppConstants.freeShippingMin || subtotal == 0
+          ? 0
+          : AppConstants.shippingFee;
+  int get totalPrice => subtotal - discount + shippingFee;
+  int get total => totalPrice;
 
   Future<void> loadCart(String userId) async {
     _userId = userId;

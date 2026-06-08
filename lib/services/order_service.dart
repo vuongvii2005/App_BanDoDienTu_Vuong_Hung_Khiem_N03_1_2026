@@ -35,9 +35,10 @@ class OrderService {
   }
 
   Future<OrderModel?> getOrderById(String orderId) async {
-    if (orderId.trim().isEmpty) return null;
+    final id = orderId.trim();
+    if (id.isEmpty) return null;
 
-    final doc = await _orders.doc(orderId).get();
+    final doc = await _orders.doc(id).get();
     if (!doc.exists) return null;
 
     return OrderModel.fromFirestore(doc);
