@@ -16,6 +16,10 @@ import '../screens/product_detail_screen.dart';
 import '../screens/product_list_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/profile_info_screen.dart';
+import '../screens/address_screen.dart';
+import '../screens/coupon_screen.dart';
+import '../screens/support_screen.dart';
+import '../screens/settings_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -34,6 +38,10 @@ class AppRoutes {
   static const String register = '/register';
   static const String admin = '/admin';
   static const String profileInfo = '/profile-info';
+  static const String address = '/address';
+  static const String coupon = '/coupon';
+  static const String support = '/support';
+  static const String settings = '/settings';
 
   static String _orderIdFromArguments(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -80,5 +88,9 @@ class AppRoutes {
         register: (_) => const RegisterScreen(),
         admin: (_) => const AdminDashboardScreen(),
         profileInfo: (_) => const ProfileInfoScreen(),
+        address: (_) => const AddressScreen(),
+        coupon: (_) => const CouponScreen(),
+        support: (_) => const SupportScreen(),
+        settings: (_) => const SettingsScreen(),
       };
 }
