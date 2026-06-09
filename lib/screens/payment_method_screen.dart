@@ -7,6 +7,7 @@ import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/order_provider.dart';
+import '../providers/product_provider.dart';
 import '../utils/formatters.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
@@ -603,6 +604,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final orderProvider = context.read<OrderProvider>();
+    final productProvider = context.read<ProductProvider>();
     final selectedItems = cart.selectedItems;
     final selectedItemIds =
         selectedItems.map((item) => item.id).toList(growable: false);
@@ -668,6 +670,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen>
           );
           return;
         }
+
+        await productProvider.refreshProducts();
+        if (!mounted) return;
 
         // Clear cart
         cart.removeItemsLocal(selectedItemIds);

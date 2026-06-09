@@ -66,6 +66,45 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/products/$(productId)).data.isActive == true;
     }
 
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function fieldChanged(field) {
+      return changedKeys().hasAny([field]);
+    }
+
+    function validStockDecrease(field) {
+      return !fieldChanged(field)
+        || (resource.data[field] is number
+          && request.resource.data[field] is number
+          && request.resource.data[field] >= 0
+          && request.resource.data[field] <= resource.data[field]);
+    }
+
+    function validDealSoldIncrease() {
+      return !fieldChanged('dealSold')
+        || (request.resource.data.dealSold is number
+          && ((resource.data.dealSold is number
+              && request.resource.data.dealSold >= resource.data.dealSold)
+            || (!(resource.data.dealSold is number)
+              && request.resource.data.dealSold >= 0)));
+    }
+
+    function userCanUpdateProductStock() {
+      return isUser()
+        && changedKeys().hasOnly(['totalStock', 'stock', 'dealSold', 'updatedAt'])
+        && validStockDecrease('totalStock')
+        && validStockDecrease('stock')
+        && validDealSoldIncrease();
+    }
+
+    function userCanUpdateVariantStock() {
+      return isUser()
+        && changedKeys().hasOnly(['stock', 'updatedAt'])
+        && validStockDecrease('stock');
+    }
+
     match /categories/{categoryId} {
       allow read: if resource.data.isActive == true || isAdmin();
       allow create, update, delete: if isAdmin();
@@ -73,12 +112,14 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if resource.data.isActive == true || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || userCanUpdateProductStock();
 
       match /variants/{variantId} {
         allow read: if isAdmin()
           || (activeProduct(productId) && resource.data.isActive == true);
-        allow create, update, delete: if isAdmin();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || userCanUpdateVariantStock();
       }
     }
 

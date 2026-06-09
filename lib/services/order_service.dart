@@ -1,4 +1,6 @@
 // Thao tac collection orders.
+import 'dart:developer' as developer;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -34,12 +36,149 @@ class OrderService {
     });
 
     try {
+      await _decreaseStockForOrder(order.items);
+    } catch (_) {
+      // Stock update is best-effort on the client; order creation must not fail.
+    }
+
+    try {
       await _incrementCouponUsedCount(order.couponCode);
     } catch (_) {
       // Coupon usage count is best-effort; order creation should not fail here.
     }
 
     return docRef.id;
+  }
+
+  Future<void> _decreaseStockForOrder(List<OrderItem> items) async {
+    final productQuantities = <String, int>{};
+    final variantQuantities = <String, _VariantStockChange>{};
+
+    for (final item in items) {
+      final productId = item.productId.trim();
+      final variantId = item.variantId.trim();
+      final quantity = item.quantity;
+      if (productId.isEmpty || quantity <= 0) continue;
+
+      productQuantities.update(
+        productId,
+        (current) => current + quantity,
+        ifAbsent: () => quantity,
+      );
+
+      if (variantId.isNotEmpty) {
+        final key = '$productId::$variantId';
+        final existing = variantQuantities[key];
+        variantQuantities[key] = existing == null
+            ? _VariantStockChange(
+                productId: productId,
+                variantId: variantId,
+                quantity: quantity,
+              )
+            : existing.copyWith(quantity: existing.quantity + quantity);
+      }
+    }
+
+    if (productQuantities.isEmpty && variantQuantities.isEmpty) return;
+
+    final now = DateTime.now();
+
+    for (final entry in productQuantities.entries) {
+      final ref = _firestore.collection('products').doc(entry.key);
+      final snapshot = await ref.get();
+      final data = snapshot.data();
+      if (!snapshot.exists || data == null) continue;
+
+      final stockField =
+          data.containsKey('totalStock') ? 'totalStock' : 'stock';
+      final currentStock = _int(data[stockField]);
+      final updates = <String, dynamic>{};
+
+      if (currentStock > 0) {
+        updates[stockField] = (currentStock - entry.value).clamp(
+          0,
+          currentStock,
+        );
+      }
+
+      final dealQuantity = _activeDealQuantityForProduct(
+        items: items,
+        productId: entry.key,
+        productData: data,
+        now: now,
+      );
+      if (dealQuantity > 0) {
+        updates['dealSold'] = FieldValue.increment(dealQuantity);
+      }
+
+      if (updates.isNotEmpty) {
+        updates['updatedAt'] = FieldValue.serverTimestamp();
+        await _safeStockUpdate(ref, updates);
+      }
+    }
+
+    for (final change in variantQuantities.values) {
+      final ref = _firestore
+          .collection('products')
+          .doc(change.productId)
+          .collection('variants')
+          .doc(change.variantId);
+      final snapshot = await ref.get();
+      final data = snapshot.data();
+      if (!snapshot.exists || data == null) continue;
+
+      final currentStock = _int(data['stock']);
+      if (currentStock <= 0) continue;
+
+      await _safeStockUpdate(ref, {
+        'stock': (currentStock - change.quantity).clamp(0, currentStock),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  Future<void> _safeStockUpdate(
+    DocumentReference<Map<String, dynamic>> ref,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      await ref.update(updates);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Khong cap nhat duoc ton kho: ${ref.path}',
+        name: 'OrderService',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  int _activeDealQuantityForProduct({
+    required List<OrderItem> items,
+    required String productId,
+    required Map<String, dynamic> productData,
+    required DateTime now,
+  }) {
+    final isHotDeal = productData['isHotDeal'] == true;
+    final salePrice = _nullableInt(productData['salePrice']);
+    final price = _int(productData['minPrice'] ?? productData['price']);
+    final startAt = _date(productData['dealStartAt']);
+    final endAt = _date(productData['dealEndAt']);
+    final started = startAt == null || !startAt.isAfter(now);
+    final notExpired = endAt == null || endAt.isAfter(now);
+
+    if (!isHotDeal ||
+        salePrice == null ||
+        salePrice >= price ||
+        !started ||
+        !notExpired) {
+      return 0;
+    }
+
+    return items
+        .where((item) =>
+            item.productId.trim() == productId && item.price == salePrice)
+        .fold<int>(0, (total, item) => total + item.quantity);
   }
 
   Future<List<OrderModel>> getOrdersByUser(String userId) async {
@@ -100,5 +239,45 @@ class OrderService {
     final currentUid = _auth.currentUser?.uid.trim() ?? '';
     if (currentUid.isNotEmpty) return currentUid;
     return fallbackUserId.trim();
+  }
+
+  static int _int(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _nullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  static DateTime? _date(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+}
+
+class _VariantStockChange {
+  final String productId;
+  final String variantId;
+  final int quantity;
+
+  const _VariantStockChange({
+    required this.productId,
+    required this.variantId,
+    required this.quantity,
+  });
+
+  _VariantStockChange copyWith({int? quantity}) {
+    return _VariantStockChange(
+      productId: productId,
+      variantId: variantId,
+      quantity: quantity ?? this.quantity,
+    );
   }
 }
